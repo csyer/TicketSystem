@@ -4,7 +4,7 @@
 #include <iostream>
 #include "exceptions.hpp"
 
-namespace sjtu {
+namespace cayso {
 
 template < typename T >
 class vector {
@@ -45,7 +45,7 @@ class vector {
         vector* ptr;
       public:
         iterator () { pos=0; ptr=nullptr; }
-        iterator ( int pos_ , vector* ptr_ ):pos(pos_),ptr(ptr_) {}
+        iterator ( int pos_ , vector* ptr_ ):pos(pos_), ptr(ptr_) {}
         iterator ( iterator& obj ) {
             if ( &obj==this ) return;
             pos=obj.pos;
@@ -148,7 +148,7 @@ class vector {
         const vector* ptr;
       public:
         const_iterator () { pos=0; ptr=nullptr; }
-        const_iterator ( int pos_ , const vector* ptr_ ):pos(pos_),ptr(ptr_) {}
+        const_iterator ( int pos_ , const vector* ptr_ ):pos(pos_), ptr(ptr_) {}
         const_iterator ( const_iterator& obj ) {
             if ( &obj==this ) return;
             pos=obj.pos;

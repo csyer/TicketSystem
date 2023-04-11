@@ -5,7 +5,7 @@
 #include "exceptions.hpp"
 #include <iostream>
 
-namespace sjtu {
+namespace cayso {
 
 template < typename T >
 struct my_type_traits {
@@ -18,7 +18,7 @@ struct my_false_type {};
 template<
 	class Key,
 	class T,
-	class Compare = std::less<Key>
+	class Compare=std::less<Key>
 > 
 class map {
   public:
@@ -35,11 +35,11 @@ class map {
         node* fth; // father
         int col; // color: 0 red; 1 black
         node ( const value_type& v ):
-            val(v),fth(nullptr),col(RED) {
+            val(v), fth(nullptr), col(RED) {
             ls=rs=nullptr;
         }
         node ( const node& obj ):
-            val(obj.val),fth(obj.fth),col(obj.col) {
+            val(obj.val), fth(obj.fth), col(obj.col) {
             ls=obj.ls;
             rs=obj.rs;
         }
@@ -315,11 +315,11 @@ class map {
 		using pointer = value_type*;
 		using reference = value_type&;
 		using iterator_category = std::output_iterator_tag;
-		iterator ():ptr(nullptr),bel(nullptr) {}
+		iterator ():ptr(nullptr), bel(nullptr) {}
         iterator ( node* ptr_, const map* bel_ ):
-            ptr(ptr_),bel(bel_) {}
+            ptr(ptr_), bel(bel_) {}
 		iterator ( const iterator& obj ):
-            ptr(obj.ptr),bel(obj.bel) {}
+            ptr(obj.ptr), bel(obj.bel) {}
 
         node* point_pos () const { return ptr; }
         node*& point_pos () { return ptr; }
@@ -388,13 +388,13 @@ class map {
 		using pointer = value_type*;
 		using reference = value_type&;
 		using iterator_category = std::output_iterator_tag;
-		const_iterator ():ptr(nullptr),bel(nullptr) {}
+		const_iterator ():ptr(nullptr), bel(nullptr) {}
         const_iterator ( const node* ptr_, const map* bel_ ):
-            ptr(ptr_),bel(bel_) {}
+            ptr(ptr_), bel(bel_) {}
 		const_iterator ( const iterator& obj ):
-            ptr(obj.point_pos()),bel(obj.belong_to()) {}
+            ptr(obj.point_pos()), bel(obj.belong_to()) {}
 		const_iterator ( const const_iterator& obj ):
-            ptr(obj.ptr),bel(obj.bel) {}
+            ptr(obj.ptr), bel(obj.bel) {}
 
         const node* point_pos () const { return ptr; }
         const map* belong_to () const { return bel; }

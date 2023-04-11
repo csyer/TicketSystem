@@ -4,12 +4,12 @@
 #include <iostream>
 #include "exceptions.hpp"
 
-namespace sjtu {
+namespace cayso {
 
 /**
  * a container like std::priority_queue which is a heap internal.
  */
-template < typename T, class Compare = std::less<T> >
+template < typename T, class Compare=std::less<T> >
 class priority_queue {
   private:
     struct node {
@@ -18,14 +18,14 @@ class priority_queue {
         T val;
         int h;
         node ( const T& val_ ):
-            ls(nullptr),rs(nullptr),val(val_),h(0) {}
+            ls(nullptr), rs(nullptr), val(val_), h(0) {}
         node ( const node& obj ):
-            ls(obj.ls),rs(obj.rs),val(obj.val),h(obj.h) {}
+            ls(obj.ls), rs(obj.rs), val(obj.val), h(obj.h) {}
     };
     node* root;
     int siz;
 
-    void copy ( node* &x, const node* y ) {
+    void copy ( node*& x, const node* y ) {
         if ( y==nullptr ) return;
         x=new node(y->val);
         copy(x->ls,y->ls);
