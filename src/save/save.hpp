@@ -71,7 +71,6 @@ class save {
         file.write(reinterpret_cast<char*>(&tmp), sizeof(T));
     }
 
-    void close
 };
 
 }
