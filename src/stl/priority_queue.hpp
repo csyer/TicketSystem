@@ -4,7 +4,7 @@
 #include <iostream>
 #include "exceptions.hpp"
 
-namespace cayso {
+namespace cay {
 
 /**
  * a container like std::priority_queue which is a heap internal.

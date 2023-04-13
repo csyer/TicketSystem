@@ -5,7 +5,7 @@
 #include "exceptions.hpp"
 #include <iostream>
 
-namespace cayso {
+namespace cay {
 
 template < typename T >
 struct my_type_traits {

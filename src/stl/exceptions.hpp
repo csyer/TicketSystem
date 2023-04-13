@@ -5,7 +5,7 @@
 #include <cstring>
 #include <string>
 
-namespace cayso {
+namespace cay {
 
 class exception {
   protected:
