@@ -4,16 +4,12 @@
 #include <fstream>
 #include <iostream>
 
-namespace cayso {
+namespace cay {
 
 void open_file ( std::fstream& file, const char* file_name, std::ios_base::openmode mode ) {
+    file.open(file_name,std::ios::app);
+    file.close();
     file.open(file_name,mode);
-    if ( !file.is_open() ) {
-        std::cerr <<"Cannot open file\n";
-        file.open(file_name,std::ios::app);
-        file.close();
-        file.open(file_name,mode);
-    }
 }
 
 template < class Key, class T, class Comp=std::less<Key> >
@@ -35,9 +31,9 @@ class bplus_tree {
   public:
     friend struct node;
     bplus_tree () {
-        open_file(f_tree,".//tree",std::ios::in|std::ios::out|std::ios::binary),
-        open_file(f_data,".//data",std::ios::in|std::ios::out|std::ios::binary),
-        open_file(f_recycle,".//recycle",std::ios::in|std::ios::out|std::ios::binary);
+        open_file(f_tree,".//bin//tree",std::ios::in|std::ios::out|std::ios::binary),
+        open_file(f_data,".//bin//data",std::ios::in|std::ios::out|std::ios::binary),
+        open_file(f_recycle,".//bin//recycle",std::ios::in|std::ios::out|std::ios::binary);
     }
     ~bplus_tree () {
         f_tree.close(),
