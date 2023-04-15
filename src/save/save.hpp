@@ -12,7 +12,8 @@ namespace cay {
 template < class T > 
 class save {
   private:
-    std::fstream file;
+    std::fstream file, rec;
+    int top, siz;
   public:
     save () {}
 
@@ -20,16 +21,20 @@ class save {
                 std::ios_base::openmode mode=std::ios::in|
                                              std::ios::out|
                                              std::ios::binary ) {
-        std::ifstream checker("data/"+file_name+".dat");
-        if ( !checker.is_open() ) 
+        std::ifstream checker1("data/"+file_name+".dat");
+        std::ifstream checker2("data/"+file_name+"_rec.dat");
+        if ( !checker1.is_open() ) 
             std::ofstream create("data/"+file_name+".dat");
+        if ( !checker2.is_open() ) 
+            std::ofstream create("data/"+file_name+"_rec.dat");
         file.open("data/"+file_name+".dat", mode);
+        rec.open("data/"+file_name+"_rec.dat", mode);
     }
     save ( const std::string& file_name, 
            std::ios_base::openmode mode=std::ios::in|
                                         std::ios::out|
                                         std::ios::binary ) {
-        this->open_file(file_name, mode);
+        this->open(file_name, mode);
     }
 
     void close () {
@@ -51,35 +56,27 @@ class save {
         file.seekp(sizeof(T)*(pos-1));
         file.write(reinterpret_cast<const char*>(&data), sizeof(T));
     }
+
     void clear ( int pos ) {
         T tmp=T();
         file.seekp(sizeof(T)*(pos-1));
         file.write(reinterpret_cast<char*>(&tmp), sizeof(T));
+
+        rec.seekp(0,std::ios::end);
+        rec.write(reinterpret_cast<char*>(&pos), sizeof(int));
+    }
+    int insert ( const T& data ) {
+        int pos;
+        if ( top ) {
+            rec.seekg(sizeof(int)*(top--));
+            rec.read(reinterpret_cast<char*>(&pos), sizeof(int));
+        }
+        else pos=++siz;
+
+        this->write(pos,data);
+        return pos;
     }
 
-};
-
-template < class T >
-class stack {
-  private:
-    save<T> bin;
-    int siz;
-  public:
-    stack () { siz=0; }
-    
-    void push ( const T& data ) {
-        bin.write(++siz,data);
-    }
-    T top () const {
-        return bin.read(siz);
-    }
-    T pop () {
-        T ret=bin.read(siz);
-        bin.clear(siz--);
-        return ret;
-    }
-    int size () const { return siz; }
-    bool empty () const { return siz==0; }
 };
 
 }
