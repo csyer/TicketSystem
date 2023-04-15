@@ -5,23 +5,9 @@
 #include <iostream>
 #include <string>
 
+#include "exceptions.hpp"
+
 namespace cay {
-
-class file_exception {
-  protected:
-    const std::string variant="";
-    std::string detail="";
-  public:
-    file_exception () {}
-    file_exception ( const file_exception& obj ):
-        variant(obj.variant), detail(obj.detail) {}
-    
-    virtual std::string what () {
-        return variant+" "+detail;
-    }
-};
-
-class read_eof : public file_exception {};
 
 template < class T > 
 class save {
