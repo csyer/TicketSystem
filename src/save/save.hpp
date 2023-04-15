@@ -59,6 +59,27 @@ class save {
 
 };
 
+template < class T >
+class stack {
+  private:
+    save<T> bin;
+    int siz;
+  public:
+    stack () { siz=0; }
+    
+    void push ( const T& data ) {
+        bin.write(++siz,data);
+    }
+    void pop () {
+        bin.clear(siz--);
+    }
+    T top () const {
+        return bin.read(siz);
+    }
+    int size () const { return siz; }
+    bool empty () const { return siz==0; }
+};
+
 }
 
 #endif 
