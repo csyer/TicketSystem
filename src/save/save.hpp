@@ -70,11 +70,13 @@ class stack {
     void push ( const T& data ) {
         bin.write(++siz,data);
     }
-    void pop () {
-        bin.clear(siz--);
-    }
     T top () const {
         return bin.read(siz);
+    }
+    T pop () {
+        T ret=bin.read(siz);
+        bin.clear(siz--);
+        return ret;
     }
     int size () const { return siz; }
     bool empty () const { return siz==0; }
