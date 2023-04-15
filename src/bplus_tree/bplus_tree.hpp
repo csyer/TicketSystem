@@ -19,11 +19,20 @@ class bplus_tree {
     const static int LOW=(M+1)/2, HIGH=M;
 
     struct node {
-        int parent, left, right, siz, addr, is_node;
+        int parent, left, right, siz, is_leaf;
         int child[M];
 
         Key keys[M-1];
-        node () = default;
+        node ( int _parent=0, int _left=0, int _right=0, int _siz=0, int _is_leaf=1 ):
+            parent(_parent), left(_left), right(_right), siz(_siz), is_leaf(_is_leaf) {
+            for ( int i=0 ; i<M ; i++ ) child[i]=0;
+            for ( int i=0 ; i<M-1 ; i++ ) keys[i]=Key();
+        }
+        node ( const node& obj ): 
+            parent(obj.parent), left(obj.left), right(obj.right), siz(obj.siz), is_leaf(obj.is_leaf) {
+            for ( int i=0 ; i<M ; i++ ) child[i]=obj.child[i];
+            for ( int i=0 ; i<M-1 ; i++ ) keys[i]=obj.keys[i];
+        }
         ~node () = default;
 
         int search ( const Key& key ) const {
@@ -34,100 +43,104 @@ class bplus_tree {
                 if ( Comp()(key, keys[id]) ) break;
             return id;
         }
-        void insert ( const int& pos, const Key& key ) {
+        void insert ( const int& pos, const Key& key, const int add ) {
             for ( int i=++siz ; i>pos ; i-- ) 
-                keys[i]=keys[i-1];
+                keys[i]=keys[i-1],
+                child[i+1]=child[i];
+            child[pos+1]=child[pos];
             keys[pos]=key;
+            child[pos]=add;
+        }
+        void erase ( const int& pos ) {
+            for ( int i=pos ; i<siz-1 ; i++ ) 
+                keys[i]=keys[i+1],
+                child[i]=child[i+1];
+            child[siz]=child[siz+1];
+            child[siz+1]=0;
+            keys[siz]=Key();
+            --siz;
         }
     };
     save<node> f_tree;
     save<T> f_data;
-    stack<int> f_tree_rec, f_data_rec;
-    int root, siz, top;
+    int root, siz, data_siz;
 
-    void fix_insert ( node x ) {}
-    void fix_erase ( node x ) {}
+    using iterator=pair<node,int>;
 
-    int new_node () {
-        if ( top ) return f_tree_rec.read(top--);
-        else return ++siz;
-    }
-    void delete_node ( int addr ) {
-        f_tree.clear(addr);
-        f_tree_rec.write(++top, addr);
-    }
+    void fix_insert ( int addr, node& x ) {}
+    void fix_erase ( int addr, node& x ) {}
 
-    node find_leaf ( const Key& key ) const {
+    pair<node,int> find_leaf ( const Key& key ) const {
         int ptr=root;
         node nod=f_tree.read(ptr);
-        for ( ; nod.is_node ; ) {
+        for ( ; !nod.is_leaf ; ) {
             ptr=nod.child[nod.search(key)];
             nod=f_tree.read(ptr);
         }
-        return nod;
+        return {nod, ptr};
+    }
+    pair<iterator,int> upper_bound ( const Key& key ) const {
+        if ( !root ) return {iterator(node(),-1), 0};
+        auto pr=find_leaf(key);
+        node nod=pr.first;
+        return {iterator(nod, nod.search(key)), pr.second};
+    }
+    pair<iterator,int> find ( const Key& key ) const {
+        auto pr=upper_bound(key);
+        iterator it=pr.first;
+        if ( it.second==-1 ) return {it, 0};
+        node nod=it.first;
+        int id=it.second;
+        if ( !id || Comp()(nod.keys[id-1], key) )
+            return {iterator(node(), -1), 0};
+        return {iterator(nod, id-1), pr.second};
     }
 
   public:
-
-    // iterator and const_iterator refer to Wankupi/map
-    // base_iterator: operator== and operator!=
-    // common_iterator: operator++ and operator--
-    class iterator {
-        node nod;
-        int id;
-      public:
-
-        iterator () = default;
-        iterator ( const node& _nod, const int& _id ): nod(_nod), id(_id) {}
-        iterator ( const iterator& obj ): nod(obj.nod), id(obj.id) {}
-
-        bool is_begin () const { return nod.left==0 && id==0; }
-        bool is_end () const { return id==-1; }
-        bool is_head () const { return id==0; }
-        node get_node () const { return nod; }
-        int get_id () const { return id; }
-
-        iterator& operator-- () {
-            if ( !id ) id=(nod=f_tree.read(nod.left)).siz-1;
-            else --id;
-            return *this;
-        }
-
-        ~iterator () = default;
-    };
-
     bplus_tree () {
         f_tree.open("tree"),
-        f_data.open("data"),
-        f_tree_rec.open("tree_recycle"),
-        f_data_rec.open("data_recycle");
+        f_data.open("data");
 
-        siz=root=0;
+        root=0;
     }
     ~bplus_tree () {
         f_tree.close(),
-        f_data.close(),
-        f_tree_rec.close(),
-        f_data_rec.close();
+        f_data.close();
     }
 
-    iterator upper_bound ( const Key& key ) const {
-        if ( !root ) return {node(),-1};
-        node nod=find_leaf(key);
-        return iterator(nod, nod.search(key));
-    }
-    iterator find ( const Key& key ) const {
-        iterator it=upper_bound(key);
-        if ( it.is_end() ) return it;
-        node nod=it.get_node();
-        int id=it.get_id();
-        if ( !id || Comp()(nod.keys[id-1], key) )
-            return {node(),-1};
-        return --it;
-    }
+    void insert ( const Key& key, const T& data ) {
+        int data_addr=f_data.insert(data);
+        if ( !root ) {
+            node nod;
+            nod.insert(0,key,data_addr);
+            root=f_tree.insert(nod);
+            return ;
+        }
+        
+        auto pr=upper_bound(key);
 
-    void insert ( const Key& key, const T& data ) {}
-    void erase ( const Key& key ) {}
+        node nod(pr.first.first);
+        int id=pr.first.second;
+        nod.insert(id,key,data_addr);
+        
+        fix_insert(pr.second,nod);
+
+        return ;
+    }
+    void erase ( const Key& key ) {
+        if ( !root ) throw erase_fail();
+
+        auto pr=find(key);
+        if ( !pr.second ) return ; // not exist
+
+        node nod(pr.first.first);
+        int id=pr.first.second;
+        nod.erase(id);
+
+        fix_erase(pr.second, nod);
+
+        return ;
+    }
 
 };
 
