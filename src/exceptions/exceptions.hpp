@@ -39,7 +39,7 @@ class read_eof : public exception {
 	/* __________________________ */
 };
 
-class find_null : public exception {
+class erase_fail : public exception {
 	/* __________________________ */
 };
 
