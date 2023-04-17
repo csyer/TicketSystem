@@ -6,14 +6,27 @@
 #include <string>
 
 #include "exceptions.hpp"
+#include "vector.hpp"
 
 namespace cay {
 
 template < class T > 
 class save {
   private:
-    std::fstream file, rec;
-    int top, siz;
+    std::fstream sav, rec;
+    vector<int> bin;
+    std::string name;
+    int siz;
+    
+    void touch ( std::fstream& file, const std::string& file_name, 
+                std::ios_base::openmode mode=std::ios::in|
+                                             std::ios::out|
+                                             std::ios::binary ) {
+        std::ifstream checker("data/"+file_name+".dat");
+        if ( !checker.is_open() ) 
+            std::ofstream create("data/"+file_name+".dat");
+        file.open("data/"+file_name+".dat", mode);
+    }
   public:
     save () {}
 
@@ -21,56 +34,72 @@ class save {
                 std::ios_base::openmode mode=std::ios::in|
                                              std::ios::out|
                                              std::ios::binary ) {
-        std::ifstream checker1("data/"+file_name+".dat");
-        std::ifstream checker2("data/"+file_name+"_rec.dat");
-        if ( !checker1.is_open() ) 
-            std::ofstream create("data/"+file_name+".dat");
-        if ( !checker2.is_open() ) 
-            std::ofstream create("data/"+file_name+"_rec.dat");
-        file.open("data/"+file_name+".dat", mode);
-        rec.open("data/"+file_name+"_rec.dat", mode);
+
+        name=file_name;
+        touch(sav, file_name);
+        sav.seekg(0,std::ios::end);
+        siz=sav.tellg()/sizeof(T);
+
+        touch(rec, file_name+"_rec");
+
+        rec.seekg(0,std::ios::beg);
+        for ( int i=0 ; !rec.eof() ; i++ ) {
+            int val;
+            rec.read(reinterpret_cast<char*>(&val), sizeof(int));
+            if ( !rec.eof() ) bin.push_back(val);
+        }
+        rec.close();
+
+        std::ofstream reset("data/"+file_name+"_rec.dat", std::ios::out|std::ios::trunc);
+        reset.close();
     }
     save ( const std::string& file_name, 
            std::ios_base::openmode mode=std::ios::in|
                                         std::ios::out|
                                         std::ios::binary ) {
-        this->open(file_name, mode);
+        open(file_name, mode);
     }
 
     void close () {
-        file.close();
+        sav.close();
     }
     ~save () {
         close();
+        touch(rec, name+"_rec");
+        rec.seekp(0, std::ios::beg);
+        for ( int i=0 ; i<(int)bin.size() ; i++ ) 
+            rec.write(reinterpret_cast<char*>(&bin[i]), sizeof(int));
+        bin.clear();
+        rec.close();
     }
 
-    T read ( const int pos ) {
-        file.seekg(0,std::ios::end);
-        if ( (int)file.tellg()<sizeof(T)*pos ) throw read_eof();
-        T res=T();
-        file.seekg(sizeof(T)*(pos-1));
-        file.read(reinterpret_cast<char*>(&res), sizeof(T));
+    T read ( int pos ) {
+        sav.seekg(0, std::ios::end);
+        if ( (int)(sav.tellg())<(int)sizeof(T)*pos ) throw read_eof();
+        T res;
+        sav.seekg(sizeof(T)*(pos-1));
+        sav.read(reinterpret_cast<char*>(&res), sizeof(T));
         return res;
     }
     void write ( int pos, const T& data ) {
-        file.seekp(sizeof(T)*(pos-1));
-        file.write(reinterpret_cast<const char*>(&data), sizeof(T));
+        sav.seekp(sizeof(T)*(pos-1));
+        sav.write(reinterpret_cast<const char*>(&data), sizeof(T));
     }
 
+    bool empty() {
+        sav.seekg(0,std::ios::end);
+        return sav.tellg()==0;
+    }
     void clear ( int pos ) {
         T tmp=T();
-        file.seekp(sizeof(T)*(pos-1));
-        file.write(reinterpret_cast<char*>(&tmp), sizeof(T));
+        sav.seekp(sizeof(T)*(pos-1));
+        sav.write(reinterpret_cast<char*>(&tmp), sizeof(T));
 
-        rec.seekp(0,std::ios::end);
-        rec.write(reinterpret_cast<char*>(&pos), sizeof(int));
+        bin.push_back(pos);
     }
     int insert ( const T& data ) {
         int pos;
-        if ( top ) {
-            rec.seekg(sizeof(int)*(top--));
-            rec.read(reinterpret_cast<char*>(&pos), sizeof(int));
-        }
+        if ( !bin.empty() ) pos=bin.back(), bin.pop_back();
         else pos=++siz;
 
         this->write(pos,data);
