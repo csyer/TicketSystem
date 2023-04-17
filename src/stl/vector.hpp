@@ -369,7 +369,7 @@ class vector {
             alloc.destroy(arr+i);
         alloc.deallocate(arr,max_length);
         siz=0; max_length=SIZE;
-        alloc.allocate(arr,max_length);
+        arr=alloc.allocate(max_length);
     }
 
     /**
