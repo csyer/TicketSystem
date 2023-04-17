@@ -17,18 +17,27 @@ class string {
     string ( const char* rhs ) {
         int len=std::min(MAX_SIZE, (int)std::strlen(rhs));
         memcpy(s, rhs, len);
-        s[len]=0;
+        memset(s+len, 0, MAX_SIZE-len);
     }
 
     template < const int _MAX_SIZE >
     string ( const string<_MAX_SIZE>& obj ) {
         int len=std::min(MAX_SIZE, _MAX_SIZE);
         memcpy(s, obj.s, len);
-        s[len]=0;
+        memset(s+len, 0, MAX_SIZE-len);
     }
 
     void print () { 
-        std::cout << s <<std::endl;
+        std::cout << s <<' ';
+    }
+
+    bool operator== ( const string& obj ) const {
+        return strcmp(s, obj.s)==0;
+    }
+    bool operator< ( const string& obj ) const {
+        for ( int i=0 ; i<MAX_SIZE ; i++ ) 
+            if ( s[i]!=obj.s[i] ) return s[i]<obj.s[i];
+        return 0;
     }
 
     ~string () = default;
