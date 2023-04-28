@@ -37,6 +37,8 @@ int main () {
         }
 
         if ( op[0]=='g' ) T.debug(1);
+
+        delete[] _index;
     }
 
     }
