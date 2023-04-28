@@ -12,20 +12,23 @@ template < const int MAX_SIZE >
 class string {
     char s[MAX_SIZE+1];
   public:
-    string () = default;
-    string ( const string& obj ) = default;
+    string () {}
+    string ( const string& rhs ) {
+        for ( int i=0 ; i<=MAX_SIZE ; i++ )
+            s[i]=rhs.s[i];
+    }
     string ( const char* rhs ) {
         int len=std::min(MAX_SIZE, (int)std::strlen(rhs));
         memcpy(s, rhs, len);
         memset(s+len, 0, MAX_SIZE-len);
     }
 
-    template < const int _MAX_SIZE >
-    string ( const string<_MAX_SIZE>& obj ) {
-        int len=std::min(MAX_SIZE, _MAX_SIZE);
-        memcpy(s, obj.s, len);
-        memset(s+len, 0, MAX_SIZE-len);
-    }
+    // template < const int _MAX_SIZE >
+    // string ( const string<_MAX_SIZE>& obj ) {
+    //     int len=std::min(MAX_SIZE, _MAX_SIZE);
+    //     memcpy(s, obj.s, len);
+    //     memset(s+len, 0, MAX_SIZE-len);
+    // }
 
     void print () { 
         std::cout << s <<' ';

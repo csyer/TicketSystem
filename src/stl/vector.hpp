@@ -282,12 +282,12 @@ class vector {
      * throw index_out_of_bound if pos is not in [0, size)
      */
     T& at ( const size_t &pos ) {
-        if ( pos<0 || pos>=siz ) 
+        if ( (int)(pos)<0 || (int)(pos)>=siz ) 
             throw index_out_of_bound();
         return arr[pos];
     }
     const T& at ( const size_t &pos ) const {
-        if ( pos<0 || pos>=siz ) 
+        if ( (int)(pos)<0 || (int)(pos)>=siz ) 
             throw index_out_of_bound();
         return arr[pos];
     }
@@ -299,12 +299,12 @@ class vector {
      *   In STL this operator does not check the boundary but I want you to do.
      */
     T& operator[] ( const size_t &pos ) {
-        if ( pos<0 || pos>=siz ) 
+        if ( (int)pos<0 || (int)pos>=siz ) 
             throw index_out_of_bound();
         return arr[pos];
     }
     const T& operator[] ( const size_t &pos ) const {
-        if ( pos<0 || pos>=siz ) 
+        if ( (int)(pos)<0 || (int)(pos)>=siz ) 
             throw index_out_of_bound();
         return arr[pos];
     }
