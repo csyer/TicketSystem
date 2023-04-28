@@ -55,7 +55,7 @@ class bplus_tree {
 
         int search ( const Key& key ) const {
             // here can be binary search
-            // find the min id s.t. key<keys[id]
+            // find the min id s.t. keys[id]>key
             int id;
             for ( id=0 ; id<siz ; id++ ) 
                 if ( Comp()(key, keys[id]) ) break;
@@ -84,13 +84,49 @@ class bplus_tree {
             keys[siz]=Key();
             --siz;
         }
+        void pop ( const int& pos ) {
+            std::swap(child[pos], child[pos+1]);
+            erase(pos);
+        }
+
+        void merge ( const node& nod ) {
+            // here can use memcpy()
+            for ( int i=0 ; i<nod.siz ; i++ ) {
+                keys[siz+i]=nod.keys[i];
+                child[siz+i]=nod.child[i];
+            }
+            siz+=nod.siz;
+            child[siz]=nod.child[nod.siz];
+            right=nod.right;
+        }
+
+        void push_front ( const pair<Key, int>& pr ) {
+            insert(0, pr.first, pr.second);
+        }
+        pair<Key, int> pop_front () {
+            Key _key=keys[0];
+            int _child=child[0];
+            erase(0);
+            return pair<Key, int>(_key, _child);
+        }
+        void push_back ( const pair<Key, int>& pr ) {
+            keys[++siz]=pr.first;
+            child[siz]=pr.second;
+        }
+        pair<Key, int> pop_back () {
+            Key _key=keys[siz-1];
+            int _child=child[siz];
+            keys[siz-1]=Key();
+            child[siz--]=0;
+            return pair<Key, int>(_key, _child);
+        }
 
         bool empty () { return siz==0; }
 
         void printKeys () {
             std::cerr <<"  keys: ";
             for ( int i=0 ; i<siz ; i++ ) 
-                std::cerr << keys[i] <<' ';
+                keys[i].first.print();
             putchar('\n');
         }
     };
@@ -106,6 +142,7 @@ class bplus_tree {
         node new_nod(nod.parent, addr, nod.right, new_siz, is_leaf);
         Key key=nod.keys[LOW];
 
+        // here can use memcpy()
         for ( int i=0 ; i<new_siz ; i++ ) {
             new_nod.keys[i]=nod.keys[LOW+i+delta],
             new_nod.child[i]=nod.child[LOW+i+delta];
@@ -120,6 +157,7 @@ class bplus_tree {
         nod.siz=LOW;
         return pair<node, Key>(new_nod, key);
     }
+
     void reset_parent ( const node& nod, const int addr ) {
         for ( int i=0 ; i<nod.siz ; i++ ) {
             node son(f_tree.read(nod.child[i]));
@@ -173,9 +211,138 @@ class bplus_tree {
         fix_insert(nod.parent, pa);
         return ;
     }
-    void fix_erase ( int addr, node& x ) {}
+    void fix_erase_node ( int addr, node& nod ) {
+        if ( addr==root ) {
+            if ( nod.siz>=1 ) 
+                f_tree.write(addr, nod);
+            else {
+                root=nod.child[0];
+                f_tree.clear(addr);
+            }
+            return ;
+        }
+        if ( nod.siz>=LOW ) {
+            f_tree.write(addr, nod);
+            return ;
+        }
 
-    pair<node,int> find_leaf ( const Key& key ) {
+        node left_nod, right_nod;
+        if ( nod.left ) left_nod=f_tree.read(nod.left);
+        else left_nod.parent=-1;
+        if ( nod.right ) right_nod=f_tree.read(nod.right);
+        else right_nod.parent=-1;
+
+        node pa=f_tree.read(nod.parent);
+        int id=pa.search(nod.keys[0]);
+        if ( left_nod.parent==nod.parent && left_nod.siz-1>=LOW ) {
+            nod.push_front(pair<Key, int>(pa.keys[id-1], left_nod.child[left_nod.siz]));
+            pa.keys[id-1]=left_nod.pop_back().first;
+            f_tree.write(nod.parent, pa);
+            f_tree.write(addr, nod);
+            f_tree.write(nod.left, left_nod);
+            return ;
+        }
+        if ( right_nod.parent==nod.parent && right_nod.siz-1>=LOW ) {
+            nod.push_back(pair<Key, int>(pa.keys[id], right_nod.child[0]));
+            pa.keys[id]=right_nod.pop_front().first;
+            f_tree.write(nod.parent, pa);
+            f_tree.write(addr, nod);
+            f_tree.write(nod.right, right_nod);
+            return ;
+        }
+
+        if ( left_nod.parent==nod.parent && left_nod.siz+nod.siz<=HIGH ) {
+            f_tree.clear(addr);
+            left_nod.push_back(pair<Key, int>(pa.keys[id-1], 0));
+            left_nod.merge(nod);
+
+            f_tree.write(nod.left, left_nod);
+            f_tree.write(addr, nod);
+            if ( nod.right ) {
+                right_nod.left=addr;
+                f_tree.write(nod.right, right_nod);
+            }
+            pa.pop(pa.search(left_nod.keys[0]));
+        }
+        else if ( right_nod.parent==nod.parent && right_nod.siz+nod.siz<=HIGH ) {
+            f_tree.clear(nod.right);
+            nod.push_back(pair<Key, int>(pa.keys[id], 0));
+            nod.merge(right_nod);
+
+            f_tree.write(addr, nod);
+            f_tree.write(nod.right, right_nod);
+
+            if ( nod.right ) {
+                node new_right=f_tree.read(nod.right);
+                new_right.left=addr;
+                f_tree.write(nod.right, new_right);
+            }
+            pa.pop(pa.search(nod.keys[0]));
+        }
+        fix_erase_node(nod.parent, pa);
+    }
+    void fix_erase ( int addr, node& nod ) {
+        if ( nod.siz>=LOW ) {
+            f_tree.write(addr, nod);
+            return ;
+        }
+
+        // std::cerr <<"fix erase "<< addr <<" with "<< nod.siz <<" keys"<<std::endl;
+        nod.printKeys();
+
+        node left_nod, right_nod;
+        if ( nod.left ) left_nod=f_tree.read(nod.left);
+        else left_nod.parent=-1;
+        if ( nod.right ) right_nod=f_tree.read(nod.right);
+        else right_nod.parent=-1;
+
+        // std::cerr <<"debug\n";
+
+        if ( left_nod.parent==nod.parent && left_nod.siz-1>=LOW ) {
+            nod.push_front(left_nod.pop_back());
+            f_tree.write(addr, nod);
+            f_tree.write(nod.left, left_nod);
+            return ;
+        }
+        if ( right_nod.parent==nod.parent && right_nod.siz-1>=LOW ) {
+            nod.push_back(right_nod.pop_front());
+            f_tree.write(addr, nod);
+            f_tree.write(nod.right, right_nod);
+            return ;
+        }
+
+        node pa=f_tree.read(nod.parent);
+        if ( left_nod.parent==nod.parent && left_nod.siz+nod.siz<=HIGH ) {
+            f_tree.clear(addr);
+            left_nod.merge(nod);
+
+            f_tree.write(nod.left, left_nod);
+            f_tree.write(addr, nod);
+            if ( nod.right ) {
+                right_nod.left=addr;
+                f_tree.write(nod.right, right_nod);
+            }
+            pa.pop(pa.search(left_nod.keys[0]));
+        }
+        else if ( right_nod.parent==nod.parent && right_nod.siz+nod.siz<=HIGH ) {
+            f_tree.clear(nod.right);
+            nod.merge(right_nod);
+
+            f_tree.write(addr, nod);
+            f_tree.write(nod.right, right_nod);
+
+            if ( nod.right ) {
+                node new_right=f_tree.read(nod.right);
+                new_right.left=addr;
+                f_tree.write(nod.right, new_right);
+            }
+            pa.pop(pa.search(nod.keys[0]));
+        }
+        fix_erase_node(nod.parent, pa);
+        return ;
+    }
+
+    pair<node, int> find_leaf ( const Key& key ) {
         int ptr=root;
         node nod=f_tree.read(ptr);
         for ( ; !nod.is_leaf ; ) {
@@ -184,13 +351,15 @@ class bplus_tree {
         }
         return {nod, ptr};
     }
-    pair<iterator,int> upper_bound ( const Key& key ) {
-        if ( !root ) return {iterator(node(),-1), 0};
+    pair<iterator, int> upper_bound ( const Key& key ) {
+        if ( !root ) return {iterator(node(), -1), 0};
         auto pr=find_leaf(key);
         node nod=pr.first;
-        return {iterator(nod, nod.search(key)), pr.second};
+        int id=nod.search(key);
+        if ( id==nod.siz ) return {iterator(node(), -1), 0};
+        return {iterator(nod, id), pr.second};
     }
-    pair<iterator,int> find ( const Key& key ) const {
+    pair<iterator, int> find ( const Key& key ) {
         auto pr=upper_bound(key);
         iterator it=pr.first;
         if ( it.second==-1 ) return {it, 0};
@@ -216,14 +385,14 @@ class bplus_tree {
                 std::cerr << nod.child[i] <<' ';
             putchar('\n');
             for ( int i=0 ; i<=nod.siz ; i++ ) 
-                print(nod.child[i], x);
+                print(nod.child[i], x, mode);
         }
         else {
             if ( nod.right ) std::cerr <<"  next: "<< nod.right <<std::endl;
             if ( !nod.left && !nod.is_leaf ) std::cerr <<"  head son: "<< nod.child[0] <<std::endl;
             if ( nod.right ) print(nod.right);
             if ( !nod.left && !nod.is_leaf ) {
-                print(nod.child[0]);
+                print(nod.child[0], mode);
             }
         }
     }
@@ -246,9 +415,9 @@ class bplus_tree {
         f_temp.close();
     }
 
-    void debug () {
+    void debug ( int mode ) {
         puts("------ DEBUG ------");
-        print(root);
+        print(root, 0, mode);
         return ;
     }
 
@@ -279,9 +448,31 @@ class bplus_tree {
         int id=pr.first.second;
         nod.erase(id);
 
-        fix_erase(pr.second, nod, 1);
+        fix_erase(pr.second, nod);
 
         return ;
+    }
+
+    vector<Key> find ( const Key& beg, const Key& end ) {
+        vector<Key> ret;
+
+        auto pr=upper_bound(beg);
+        if ( !pr.second ) return ret;
+
+        node nod=pr.first.first;
+        int id=pr.first.second;
+
+        while ( !Comp()(end, nod.keys[id]) ) {
+            ret.push_back(nod.keys[id]);
+            ++id;
+            if ( id==nod.siz ) {
+                if ( !nod.right ) break;
+                nod=f_tree.read(nod.right);
+                id=0;
+            }
+        }
+
+        return ret;
     }
 
     void clear () {
