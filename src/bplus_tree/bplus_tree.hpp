@@ -284,11 +284,12 @@ class bplus_tree {
         fix_erase_node(nod.parent, pa);
     }
     void fix_erase ( int addr, node& nod ) {
+        // std::cerr <<"check root "<< root <<" "<< addr <<std::endl;
         if ( addr==root ) {
+            // std::cerr <<"check siz "<< nod.siz <<std::endl;
             if ( nod.siz>=1 ) 
                 f_tree.write(addr, nod);
             else {
-                reset_parent(nod, 0);
                 root=0;
                 f_tree.clear(addr);
             }
@@ -358,6 +359,7 @@ class bplus_tree {
     }
 
     pair<node, int> find_leaf ( const Key& key ) {
+        if ( !root ) return pair<node, int>(node(), 0);
         int ptr=root;
         node nod=f_tree.read(ptr);
         for ( ; !nod.is_leaf ; ) {
@@ -371,7 +373,6 @@ class bplus_tree {
         auto pr=find_leaf(key);
         node nod=pr.first;
         int id=nod.search(key);
-        if ( id==nod.siz ) return {iterator(node(), -1), 0};
         return {iterator(nod, id), pr.second};
     }
     pair<iterator, int> find ( const Key& key ) {
@@ -435,7 +436,8 @@ class bplus_tree {
 
     void debug ( int mode ) {
         puts("------ DEBUG ------");
-        print(root, 0, mode);
+        if ( root ) print(root, 0, mode);
+        else puts("TREE IS EMPTY");
         return ;
     }
 
@@ -475,10 +477,11 @@ class bplus_tree {
         vector<Key> ret;
 
         auto pr=upper_bound(beg);
-        if ( !pr.second ) return ret;
 
         node nod=pr.first.first;
         int id=pr.first.second;
+
+        if ( id==nod.siz ) return ret;
 
         while ( !Comp()(end, nod.keys[id]) ) {
             ret.push_back(nod.keys[id]);
