@@ -39,18 +39,18 @@ class save {
         sav.seekg(0,std::ios::end);
         siz=sav.tellg()/sizeof(T);
 
-        touch(rec, file_name+"_rec", file_path, mode);
+        // touch(rec, file_name+"_rec", file_path, mode);
 
-        rec.seekg(0,std::ios::beg);
-        for ( int i=0 ; !rec.eof() ; i++ ) {
-            int val;
-            rec.read(reinterpret_cast<char*>(&val), sizeof(int));
-            if ( !rec.eof() ) bin.push_back(val);
-        }
-        rec.close();
+        // rec.seekg(0,std::ios::beg);
+        // for ( int i=0 ; !rec.eof() ; i++ ) {
+        //     int val;
+        //     rec.read(reinterpret_cast<char*>(&val), sizeof(int));
+        //     if ( !rec.eof() ) bin.push_back(val);
+        // }
+        // rec.close();
 
-        std::ofstream reset(path+file_name+"_rec.dat", std::ios::out|std::ios::trunc);
-        reset.close();
+        // std::ofstream reset(path+file_name+"_rec.dat", std::ios::out|std::ios::trunc);
+        // reset.close();
     }
     save ( const std::string& file_name, const std::string& file_path="data/", 
            std::ios_base::openmode mode=std::ios::in|
@@ -64,12 +64,12 @@ class save {
     }
     ~save () {
         close();
-        touch(rec, name+"_rec", path);
-        rec.seekp(0, std::ios::beg);
-        for ( int i=0 ; i<(int)bin.size() ; i++ ) 
-            rec.write(reinterpret_cast<char*>(&bin[i]), sizeof(int));
-        bin.clear();
-        rec.close();
+        // touch(rec, name+"_rec", path);
+        // rec.seekp(0, std::ios::beg);
+        // for ( int i=0 ; i<(int)bin.size() ; i++ ) 
+        //     rec.write(reinterpret_cast<char*>(&bin[i]), sizeof(int));
+        // bin.clear();
+        // rec.close();
     }
 
     T read ( int pos ) {
@@ -101,13 +101,14 @@ class save {
         sav.seekp(sizeof(T)*(pos-1));
         sav.write(reinterpret_cast<char*>(&tmp), sizeof(T));
 
-        bin.push_back(pos);
+        // bin.push_back(pos);
     }
     int get_address () {
-        int pos;
-        if ( !bin.empty() ) pos=bin.back(), bin.pop_back();
-        else pos=++siz;
-        return pos;
+        // int pos;
+        // if ( !bin.empty() ) pos=bin.back(), bin.pop_back();
+        // else pos=++siz;
+        // return pos;
+        return ++siz;
     }
     int insert ( const T& data ) {
         int pos=get_address();
