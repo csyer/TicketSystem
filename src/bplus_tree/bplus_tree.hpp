@@ -15,8 +15,8 @@ template < class Key, class T, class Comp=std::less<Key> >
 class bplus_tree {
   private:
     const static int BLOCK_SIZE=4000; //4kb
-    const static int M=BLOCK_SIZE/sizeof(Key);
-    // const static int M=3;
+    // const static int M=BLOCK_SIZE/sizeof(Key);
+    const static int M=3;
     const static int LOW=(M+1)/2, HIGH=M;
 
     struct node {
