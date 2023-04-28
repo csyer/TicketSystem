@@ -44,7 +44,7 @@ int main () {
         std::cerr <<"ERROR!\n";
     }
 
-    T.clear();
+    // T.clear();
 
     return 0;
 }
