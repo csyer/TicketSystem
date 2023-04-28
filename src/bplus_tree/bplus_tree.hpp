@@ -79,8 +79,8 @@ class bplus_tree {
                 keys[i]=keys[i+1],
                 child[i]=child[i+1];
             }
-            child[siz]=child[siz+1];
-            child[siz+1]=0;
+            child[siz-1]=child[siz];
+            child[siz]=0;
             keys[siz]=Key();
             --siz;
         }
@@ -159,7 +159,7 @@ class bplus_tree {
     }
 
     void reset_parent ( const node& nod, const int addr ) {
-        for ( int i=0 ; i<nod.siz ; i++ ) {
+        for ( int i=0 ; i<=nod.siz ; i++ ) {
             node son(f_tree.read(nod.child[i]));
             son.parent=addr;
             f_tree.write(nod.child[i], son);
@@ -216,6 +216,8 @@ class bplus_tree {
             if ( nod.siz>=1 ) 
                 f_tree.write(addr, nod);
             else {
+                // std::cerr <<"reset 0\n";
+                reset_parent(nod, 0);
                 root=nod.child[0];
                 f_tree.clear(addr);
             }
@@ -282,13 +284,23 @@ class bplus_tree {
         fix_erase_node(nod.parent, pa);
     }
     void fix_erase ( int addr, node& nod ) {
+        if ( addr==root ) {
+            if ( nod.siz>=1 ) 
+                f_tree.write(addr, nod);
+            else {
+                reset_parent(nod, 0);
+                root=0;
+                f_tree.clear(addr);
+            }
+            return ;
+        }
         if ( nod.siz>=LOW ) {
             f_tree.write(addr, nod);
             return ;
         }
 
         // std::cerr <<"fix erase "<< addr <<" with "<< nod.siz <<" keys"<<std::endl;
-        nod.printKeys();
+        // nod.printKeys();
 
         node left_nod, right_nod;
         if ( nod.left ) left_nod=f_tree.read(nod.left);
@@ -313,23 +325,26 @@ class bplus_tree {
 
         node pa=f_tree.read(nod.parent);
         if ( left_nod.parent==nod.parent && left_nod.siz+nod.siz<=HIGH ) {
+            // std::cerr <<"debug\n";
+
             f_tree.clear(addr);
             left_nod.merge(nod);
 
             f_tree.write(nod.left, left_nod);
-            f_tree.write(addr, nod);
             if ( nod.right ) {
                 right_nod.left=addr;
                 f_tree.write(nod.right, right_nod);
             }
+
+            // std::cerr <<"check id "<< pa.search(left_nod.keys[0]) <<std::endl;
             pa.pop(pa.search(left_nod.keys[0]));
+            // std::cerr <<"check child "<< pa.child[0] <<std::endl;
         }
         else if ( right_nod.parent==nod.parent && right_nod.siz+nod.siz<=HIGH ) {
             f_tree.clear(nod.right);
             nod.merge(right_nod);
 
             f_tree.write(addr, nod);
-            f_tree.write(nod.right, right_nod);
 
             if ( nod.right ) {
                 node new_right=f_tree.read(nod.right);
@@ -373,7 +388,10 @@ class bplus_tree {
     void print ( int x, int p=0, int mode=0 ) {
         std::cerr <<"print "<< x <<std::endl;
         node nod=f_tree.read(x);
-        if ( mode==1 && nod.parent!=p ) puts("    -- ERROR! --    ");
+        if ( mode==1 && nod.parent!=p ) {
+            puts("    -- ERROR! --    ");
+            std::cerr <<"real parent: "<< p <<", but parent: "<< nod.parent <<std::endl;
+        }
         if ( nod.is_leaf ) std::cerr <<"leaf "<< x <<" with "<< nod.siz <<" keys:\n";
         else std::cerr <<"node "<< x <<" with "<< nod.siz <<" keys:\n";
         nod.printKeys();
