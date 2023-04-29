@@ -30,7 +30,13 @@ class string {
     //     memset(s+len, 0, MAX_SIZE-len);
     // }
 
-    void print () { 
+    string& operator= ( const string& obj ) {
+        if ( this==&obj ) return *this;
+        memcpy(s, obj.s, MAX_SIZE);
+        return *this;
+    }
+
+    void print () const { 
         std::cout << s <<' ';
     }
 
