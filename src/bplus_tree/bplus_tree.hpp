@@ -16,7 +16,7 @@ class bplus_tree {
   private:
     const static int BLOCK_SIZE=4000; //4kb
     // const static int M=BLOCK_SIZE/sizeof(Key);
-    const static int M=3;
+    const static int M=4;
     const static int LOW=M/2, SIZ=LOW+1, HIGH=M;
 
     struct node {
@@ -125,9 +125,12 @@ class bplus_tree {
 
         void printKeys () {
             std::cerr <<"  keys: ";
-            for ( int i=0 ; i<siz ; i++ ) 
-                std::cerr << keys[i].second <<' ';
-            putchar('\n');
+            for ( int i=0 ; i<siz ; i++ ) {
+                std::cerr <<"(";
+                keys[i].first.print();
+                std::cerr << keys[i].second <<") ";
+            }
+            std::cerr <<'\n';
         }
     };
     save<node> f_tree;
@@ -234,9 +237,15 @@ class bplus_tree {
         if ( nod.right ) right_nod=f_tree.read(nod.right);
         else right_nod.parent=-1;
 
+        // std::cerr <<"check node "<< addr <<" with "<< nod.siz <<" keys\n";
+        // nod.printKeys();
+        // std::cerr <<"check left node "<< nod.left <<" with "<< left_nod.siz <<" keys\n";
+        // left_nod.printKeys();
+
         node pa=f_tree.read(nod.parent);
         if ( left_nod.parent==nod.parent && left_nod.siz-1>=LOW ) {
             int id=pa.search(left_nod.keys[0]);
+            // std::cerr <<"check id "<< id <<std::endl;
             if ( is_leaf ) {
                 nod.insert(0, left_nod.keys[left_nod.siz-1], left_nod.child[left_nod.siz-1]);
                 left_nod.erase(left_nod.siz-1);
@@ -293,7 +302,7 @@ class bplus_tree {
 
             f_tree.write(nod.left, left_nod);
             if ( nod.right ) {
-                right_nod.left=addr;
+                right_nod.left=nod.left;
                 f_tree.write(nod.right, right_nod);
             }
             pa.pop(id);
@@ -363,7 +372,7 @@ class bplus_tree {
         std::cerr <<"print "<< x <<std::endl;
         node nod=f_tree.read(x);
         if ( mode==1 && nod.parent!=p ) {
-            puts("    -- ERROR! --    ");
+            std::cerr <<"    -- ERROR! --    \n";
             std::cerr <<"real parent: "<< p <<", but parent: "<< nod.parent <<std::endl;
         }
         if ( nod.is_leaf ) std::cerr <<"leaf "<< x <<" with "<< nod.siz <<" keys:\n";
@@ -375,7 +384,7 @@ class bplus_tree {
             std::cerr <<"  childs: ";
             for ( int i=0 ; i<=nod.siz ; i++ ) 
                 std::cerr << nod.child[i] <<' ';
-            putchar('\n');
+            std::cerr <<'\n';
             for ( int i=0 ; i<=nod.siz ; i++ ) 
                 print(nod.child[i], x, mode);
         }
@@ -408,9 +417,10 @@ class bplus_tree {
     }
 
     void debug ( int mode ) {
-        puts("------ DEBUG ------");
+        std::cerr <<"------ DEBUG ------\n";
         if ( root ) print(root, 0, mode);
-        else puts("TREE IS EMPTY");
+        else std::cerr <<"TREE IS EMPTY\n";;
+        std::cerr <<"------ QUIT  ------\n";
         return ;
     }
 
@@ -432,10 +442,14 @@ class bplus_tree {
         return ;
     }
     void erase ( const Key& key ) {
-        if ( !root ) throw erase_fail();
+        if ( !root ) return ;
 
         auto pr=find(key);
-        if ( !pr.second ) return ; // not exist
+        if ( !pr.second ) {
+            // std::cerr <<"("; key.first.print();
+            // std::cerr << key.second <<") not exist\n";
+            return ; // not exist
+        }
 
         node nod(pr.first.first);
         int id=pr.first.second;
@@ -454,7 +468,16 @@ class bplus_tree {
         node nod=pr.first.first;
         int id=pr.first.second;
 
-        if ( !root || id==nod.siz ) return ret;
+        // std::cerr <<"check id "<< id <<std::endl;
+
+        if ( !root || ( id==nod.siz && nod.right==0 ) ) return ret;
+
+        if ( id==nod.siz ) {
+            nod=f_tree.read(nod.right);
+            id=0;
+        }
+
+        // std::cerr <<"check begin "<< nod.keys[id].second <<std::endl;
 
         while ( !Comp()(end, nod.keys[id]) ) {
             ret.push_back(nod.keys[id]);

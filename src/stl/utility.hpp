@@ -37,7 +37,7 @@ class string {
     }
 
     void print () const { 
-        std::cout << s <<' ';
+        std::cerr << s <<' ';
     }
 
     bool operator== ( const string& obj ) const {
