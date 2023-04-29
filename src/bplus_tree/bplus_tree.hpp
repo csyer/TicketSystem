@@ -110,7 +110,7 @@ class bplus_tree {
             return pair<Key, int>(_key, _child);
         }
         void push_back ( const pair<Key, int>& pr ) {
-            keys[++siz]=pr.first;
+            keys[siz++]=pr.first;
             child[siz]=pr.second;
         }
         pair<Key, int> pop_back () {
@@ -126,7 +126,7 @@ class bplus_tree {
         void printKeys () {
             std::cerr <<"  keys: ";
             for ( int i=0 ; i<siz ; i++ ) 
-                keys[i].first.print();
+                std::cerr << keys[i].second <<' ';
             putchar('\n');
         }
     };
@@ -211,13 +211,13 @@ class bplus_tree {
         fix_insert(nod.parent, pa);
         return ;
     }
-    void fix_erase ( int addr, node& nod, const int is_leaf=0 ) {
+    void fix_erase ( int addr, node& nod, int is_leaf=0 ) {
         if ( addr==root ) {
             if ( nod.siz>=1 ) 
                 f_tree.write(addr, nod);
             else {
                 // std::cerr <<"reset 0\n";
-                reset_parent(nod, 0);
+                if ( nod.child[0] ) reset_parent(nod, 0);
                 root=nod.child[0];
                 f_tree.clear(addr);
             }
@@ -306,6 +306,12 @@ class bplus_tree {
                 nod.push_back(pair<Key, int>(pa.keys[id], 0));
                 reset_parent(right_nod, addr);
             }
+
+            // std::cerr <<"check node "<< addr <<" with "<< nod.siz <<" keys\n";
+            // nod.printKeys();
+            // std::cerr <<"check right node "<< nod.right <<" with "<< right_nod.siz <<" keys\n";
+            // right_nod.printKeys();
+
             nod.merge(right_nod);
 
             f_tree.write(addr, nod);
@@ -315,7 +321,12 @@ class bplus_tree {
                 new_right.left=addr;
                 f_tree.write(nod.right, new_right);
             }
+
             pa.pop(id);
+
+            // std::cerr <<"check id "<< id <<std::endl;
+            // std::cerr <<"check parent "<< nod.parent <<" with "<< pa.siz <<" keys\n";
+            // pa.printKeys();
         }
         fix_erase(nod.parent, pa);
     }
