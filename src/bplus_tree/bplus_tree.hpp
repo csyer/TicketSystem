@@ -454,7 +454,7 @@ class bplus_tree {
         node nod=pr.first.first;
         int id=pr.first.second;
 
-        if ( id==nod.siz ) return ret;
+        if ( !root || id==nod.siz ) return ret;
 
         while ( !Comp()(end, nod.keys[id]) ) {
             ret.push_back(nod.keys[id]);
