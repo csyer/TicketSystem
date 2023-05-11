@@ -36,7 +36,7 @@ int main () {
             putchar('\n');
         }
 
-        if ( op[0]=='g' ) T.debug(1);
+        if ( op[0]=='g' ) T.debug(_index[0]=='d');
 
         delete[] _index;
     }
@@ -44,6 +44,7 @@ int main () {
     }
     catch ( ... ) {
         std::cerr <<"ERROR!\n";
+        T.clear();
     }
 
     // T.clear();

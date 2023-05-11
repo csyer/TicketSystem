@@ -1,8 +1,6 @@
 #ifndef SJTU_UTILITY_HPP
 #define SJTU_UTILITY_HPP
 
-// #include <utility>
-
 #include <cstring>
 #include <iostream>
 
@@ -22,13 +20,6 @@ class string {
         memcpy(s, rhs, len);
         memset(s+len, 0, MAX_SIZE-len);
     }
-
-    // template < const int _MAX_SIZE >
-    // string ( const string<_MAX_SIZE>& obj ) {
-    //     int len=std::min(MAX_SIZE, _MAX_SIZE);
-    //     memcpy(s, obj.s, len);
-    //     memset(s+len, 0, MAX_SIZE-len);
-    // }
 
     string& operator= ( const string& obj ) {
         if ( this==&obj ) return *this;
@@ -81,6 +72,9 @@ class pair {
     bool operator< ( const pair<T1, T2>& obj ) const {
         if ( first==obj.first ) return second<obj.second;
         return first<obj.first;
+    }
+    bool operator== ( const pair<T1, T2>& obj ) const {
+        return first==obj.first && second==obj.second;
     }
 
 };
