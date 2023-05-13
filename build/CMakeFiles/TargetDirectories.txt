@@ -1,5 +1,0 @@
-/home/chayso/code/TicketSystem/build/CMakeFiles/code.dir
-/home/chayso/code/TicketSystem/build/CMakeFiles/edit_cache.dir
-/home/chayso/code/TicketSystem/build/CMakeFiles/rebuild_cache.dir
-/home/chayso/code/TicketSystem/build/src/CMakeFiles/edit_cache.dir
-/home/chayso/code/TicketSystem/build/src/CMakeFiles/rebuild_cache.dir
