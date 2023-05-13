@@ -125,7 +125,6 @@ class bplus_tree {
     };
     save<node> f_tree;
     save<T> f_data;
-    save<int> f_temp;
     int root, siz;
 
     using iterator=pair<node, int>;
@@ -356,18 +355,28 @@ class bplus_tree {
 
   public:
     bplus_tree () {
-        f_tree.open("tree"),
-        f_data.open("data");
-        f_temp.open("temp");
-
-        if ( f_temp.empty() ) root=0;
-        else root=f_temp.read(1);
+        f_tree.open("data/tree.dat"),
+        f_data.open("data/data.dat");
+        
+        std::ifstream checker("data/temp.dat");
+        if ( !checker.is_open() ) {
+            std::ofstream create("data/temp.dat");
+            root=0;
+            create.close();
+        }
+        else {
+            checker.seekg(0, std::ios::beg);
+            checker.read(reinterpret_cast<char*>(&root), sizeof(int));
+        }
+        checker.close();
     }
     ~bplus_tree () {
-        f_temp.write(1,root);
+        std::ofstream reset("data/temp.dat");
+        reset.seekp(0, std::ios::beg);
+        reset.write(reinterpret_cast<const char*>(&root), sizeof(int));
+        reset.close();
         f_tree.close(),
-        f_data.close(),
-        f_temp.close();
+        f_data.close();
     }
 
     void debug ( int mode ) {
@@ -439,7 +448,6 @@ class bplus_tree {
     void clear () {
         f_tree.clear();
         f_data.clear();
-        f_temp.clear();
     }
 
 };

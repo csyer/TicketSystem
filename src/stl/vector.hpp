@@ -4,7 +4,7 @@
 #include <iostream>
 #include "exceptions.hpp"
 
-namespace sjtu {
+namespace cay {
 
 template < typename T >
 class vector {
