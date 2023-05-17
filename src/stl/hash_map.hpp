@@ -18,7 +18,7 @@ class hash_map {
         int nod;
         if ( top ) nod=stk[top--];
         else nod=++cnt;
-        nxt[nod]=lst[x], lst[x]=nod, key[cnt]=u, dat[nod]=v; 
+        nxt[nod]=lst[x], lst[x]=nod, key[nod]=u, dat[nod]=v; 
     }
 
     int hash ( int x ) { return x%N; }
@@ -34,8 +34,7 @@ class hash_map {
 
     void insert ( int x, const T& y ) { add(hash(x), x, y); }
     void modify ( int x, const T& y ) {
-        int hs=hash(x);
-        for ( int pre=0, i=lst[hs] ; i ; pre=i, i=nxt[i] ) 
+        for ( int i=lst[hash(x)] ; i ; i=nxt[i] ) 
             if ( key[i]==x ) {
                 dat[i]=y;
                 return ;

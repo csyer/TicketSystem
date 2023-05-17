@@ -14,7 +14,7 @@ namespace cay {
 template < class T >
 class LRU {
   private:
-    static const int N=1e2+10, M=1e2;
+    static const int N=1e2+10, M=1e1;
     hash_map<int> mp; // pos -> list pos
     int nxt[N], pre[N], idx[N], head, tail, siz;
     T dat[N];
@@ -53,11 +53,11 @@ class LRU {
         open(file_name, mode);
     }
     ~LRU () {
-        int ret=0;
-        for ( int i=head ; i ; i=nxt[i] )
-            pop(idx[i], dat[i]), ++ret;
+        for ( int i=head ; i ; i=nxt[i] ) {
+            pop(idx[i], dat[i]);
+            // std::cerr <<"delete "<< i <<'\n';
+        }
         sav.close();
-        std::cerr << ret <<' '<< siz <<std::endl;
     }
 
   protected:

@@ -1,6 +1,7 @@
 #ifndef BPLUS_TREE_HPP
 #define BPLUS_TREE_HPP
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
@@ -126,6 +127,7 @@ class bplus_tree {
     save<node> f_tree;
     save<T> f_data;
     int root, siz;
+    std::string path_name;
 
     using iterator=pair<node, int>;
 
@@ -354,13 +356,15 @@ class bplus_tree {
     }
 
   public:
-    bplus_tree () {
-        f_tree.open("data/tree.dat"),
-        f_data.open("data/data.dat");
+    bplus_tree ( const std::string& name="" ) {
+        path_name="data/"+name+"/";
+        std::filesystem::create_directories(path_name);
+        f_tree.open(path_name+"tree.dat"),
+        f_data.open(path_name+"data.dat");
         
-        std::ifstream checker("data/temp.dat");
+        std::ifstream checker(path_name+"temp.dat");
         if ( !checker.is_open() ) {
-            std::ofstream create("data/temp.dat");
+            std::ofstream create(path_name+"temp.dat");
             root=0;
             create.close();
         }
@@ -371,7 +375,7 @@ class bplus_tree {
         checker.close();
     }
     ~bplus_tree () {
-        std::ofstream reset("data/temp.dat");
+        std::ofstream reset(path_name+"temp.dat");
         reset.seekp(0, std::ios::beg);
         reset.write(reinterpret_cast<const char*>(&root), sizeof(int));
         reset.close();
