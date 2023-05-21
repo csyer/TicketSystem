@@ -15,8 +15,8 @@ namespace cay {
 template < class Key, class T, class Comp=std::less<Key> >
 class bplus_tree {
   private:
-    const static int BLOCK_SIZE=4000; //4kb
-    const static int M=BLOCK_SIZE/sizeof(Key);
+    const static int BLOCK_SIZE=4096; //4kb
+    const static int M=std::max(4ul, BLOCK_SIZE/sizeof(Key));
     // const static int M=4;
     const static int LOW=M/2, SIZ=LOW+1, HIGH=M;
 
@@ -126,7 +126,7 @@ class bplus_tree {
     };
     save<node> f_tree;
     save<T> f_data;
-    int root, siz;
+    int root;
     std::string path_name;
 
     using iterator=pair<node, int>;
@@ -356,7 +356,7 @@ class bplus_tree {
     }
 
   public:
-    bplus_tree ( const std::string& name="" ) {
+    void open ( const std::string& name="" ) {
         path_name="data/"+name+"/";
         std::filesystem::create_directories(path_name);
         f_tree.open(path_name+"tree.dat"),
@@ -374,6 +374,7 @@ class bplus_tree {
         }
         checker.close();
     }
+    bplus_tree () {}
     ~bplus_tree () {
         std::ofstream reset(path_name+"temp.dat");
         reset.seekp(0, std::ios::beg);
@@ -381,6 +382,20 @@ class bplus_tree {
         reset.close();
         f_tree.close(),
         f_data.close();
+    }
+
+    pair<T, bool> at ( const Key& key ) {
+        auto pr=find(key);
+        if ( !pr.second ) return {T(), 0};
+        auto it=pr.first;
+        return {f_data.read(it.first.child[it.second]), 1};
+    }
+    bool update ( const Key& key, const T& data ) {
+        auto pr=find(key);
+        if ( !pr.second ) return 0;
+        auto it=pr.first;
+        f_data.write(it.first.child[it.second], data);
+        return 1;
     }
 
     void debug ( int mode ) {
@@ -391,13 +406,15 @@ class bplus_tree {
         return ;
     }
 
-    void insert ( const Key& key, const T& data ) {
+    bool insert ( const Key& key, const T& data ) {
+        if ( find(key).second ) return 0;
+
         int data_addr=f_data.insert(data);
         if ( !root ) {
             node nod;
             nod.insert(0, key, data_addr);
             root=f_tree.insert(nod);
-            return ;
+            return 1;
         }
         
         auto pr=upper_bound(key);
@@ -406,13 +423,13 @@ class bplus_tree {
 
         nod.insert(id, key, data_addr);
         fix_insert(pr.second, nod, 1);
-        return ;
+        return 1;
     }
-    void erase ( const Key& key ) {
-        if ( !root ) return ;
+    bool erase ( const Key& key ) {
+        if ( !root ) return 0;
 
         auto pr=find(key);
-        if ( !pr.second ) return ; // not exist
+        if ( !pr.second ) return 0;
 
         node nod(pr.first.first);
         int id=pr.first.second;
@@ -420,10 +437,10 @@ class bplus_tree {
 
         fix_erase(pr.second, nod, 1);
 
-        return ;
+        return 1;
     }
 
-    vector<Key> find ( const Key& beg, const Key& end ) {
+    vector<Key> find_range ( const Key& beg, const Key& end ) {
         vector<Key> ret;
 
         auto pr=upper_bound(beg);
@@ -448,6 +465,8 @@ class bplus_tree {
 
         return ret;
     }
+
+    bool empty () { return root==0; }
 
     void clear () {
         f_tree.clear();
