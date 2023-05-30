@@ -125,7 +125,7 @@ class bplus_tree {
         }
     };
     save<node> f_tree;
-    save<T> f_data;
+    database<T> f_data;
     int root;
     std::string path_name;
 
@@ -397,6 +397,9 @@ class bplus_tree {
         f_data.write(it.first.child[it.second], data);
         return 1;
     }
+    int count ( const Key& key ) {
+        return find(key).second;
+    }
 
     void debug ( int mode ) {
         std::cerr <<"------ DEBUG ------\n";
@@ -409,7 +412,7 @@ class bplus_tree {
     bool insert ( const Key& key, const T& data ) {
         if ( find(key).second ) return 0;
 
-        int data_addr=f_data.insert(data);
+        int data_addr=f_data.push_back(data);
         if ( !root ) {
             node nod;
             nod.insert(0, key, data_addr);
@@ -440,8 +443,35 @@ class bplus_tree {
         return 1;
     }
 
-    vector<Key> find_range ( const Key& beg, const Key& end ) {
-        vector<Key> ret;
+    vector<T> find_range ( const Key& key ) {
+        vector<T> ret;
+
+        auto pr=upper_bound(key);
+        if ( !pr.second ) return ret;
+        
+        node nod=pr.first.first;
+        int id=pr.first.second;
+
+        if ( id==0 && nod.left==0 ) return ret;
+        if ( id==0 ) {
+            nod=f_tree.read(nod.left);
+            id=nod.siz-1;
+        }
+
+        while ( key==nod.keys[id] ) {
+            ret.push_back(f_data.read(nod.child[id]));
+            --id;
+            if ( id==-1 ) {
+                if ( !nod.left ) break;
+                nod=f_tree.read(nod.left);
+                id=nod.siz-1;
+            }
+        }
+
+        return ret;
+    }
+    vector<T> find_range ( const Key& beg, const Key& end ) {
+        vector<T> ret;
 
         auto pr=upper_bound(beg);
         node nod=pr.first.first;
@@ -454,7 +484,7 @@ class bplus_tree {
         }
 
         while ( !Comp()(end, nod.keys[id]) ) {
-            ret.push_back(nod.keys[id]);
+            ret.push_back(f_data.read(nod.cihld[id]));
             ++id;
             if ( id==nod.siz ) {
                 if ( !nod.right ) break;
@@ -471,6 +501,7 @@ class bplus_tree {
     void clear () {
         f_tree.clear();
         f_data.clear();
+        root=0;
     }
 
 };

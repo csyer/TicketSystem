@@ -1,15 +1,41 @@
 #ifndef SJTU_CONSOLE_HPP
 #define SJTU_CONSOLE_HPP
 
-#include "ticket.hpp"
+#include "vector.hpp"
+
+#include "system.hpp"
 #include "train.hpp"
 #include "user.hpp"
 
 namespace cay {
 
-class console {
+struct order_info {
+    int type;
+    user_name user;
+    Time startTime;
+    int pos, needSeat, from, to;
+    order_info () {}
+    order_info ( int _type, const user_name& _user, const Time& _startTime,
+                 int _pos, int _needSeat, int _from, int _to ):
+        type(_type), user(_user), startTime(_startTime), 
+        pos(_pos), needSeat(_needSeat), from(_from), to(_to) {}
+};
+const std::string STATUS[]={"[success]", "[pending]", "[refunded]"};
+bool default_int_cmp ( const int& x, const int& y ) { return x<y; }
+
+class console : public system {
   public:
-    console () {}
+    console () {
+        waiting.open("data/temp/waiting_list.dat");
+        for ( int i=0 ; i<waiting.size() ; i++ )
+            waiting_list.push_back(waiting.read(i));
+        waiting.clear();
+    }
+    ~console () {
+        for ( int i=0 ; i<waiting_list.size() ; i++ )
+            waiting.push_back(waiting_list[i]);
+        waiting.close();
+    }
 
     bool solve () {
         char input[4096];
@@ -24,39 +50,56 @@ class console {
             key[arg_num]=strtok(nullptr, " ");
             if ( key[arg_num]==nullptr ) break;
             arg[arg_num]=strtok(nullptr, " ");
-            // std::cerr << key[arg_num] <<' '<< arg[arg_num] <<' ';
         }
         
         std::cout << id <<' ';
         if ( !strcmp(cmd, "add_user") ) {
-            std::cout << user.add_user(key, arg, arg_num) <<'\n';
+            std::cout << user_sys.add_user(key, arg, arg_num) <<'\n';
         }
         if ( !strcmp(cmd, "login") ) {
-            std::cout << user.login(key, arg, arg_num) <<'\n';
+            std::cout << user_sys.login(key, arg, arg_num) <<'\n';
         }
         if ( !strcmp(cmd, "logout") ) {
-            std::cout << user.logout(key, arg, arg_num) <<'\n';
+            std::cout << user_sys.logout(key, arg, arg_num) <<'\n';
         }
         if ( !strcmp(cmd, "query_profile") ) {
-            std::cout << user.query_profile(key, arg, arg_num) <<'\n';
+            user_sys.query_profile(key, arg, arg_num);
         }
         if ( !strcmp(cmd, "modify_profile") ) {
-            std::cout << user.modify_profile(key, arg, arg_num) <<'\n';
+            user_sys.modify_profile(key, arg, arg_num);
         }
 
-        if ( !strcmp(cmd, "delete_train") ) {}
-        if ( !strcmp(cmd, "release_train") ) {}
-        if ( !strcmp(cmd, "query_train") ) {}
-        if ( !strcmp(cmd, "query_ticket") ) {}
-        if ( !strcmp(cmd, "query_transfer") ) {}
+        if ( !strcmp(cmd, "add_train") ) {
+            std::cout << train_sys.add_train(key, arg, arg_num) <<'\n';
+        }
+        if ( !strcmp(cmd, "delete_train") ) {
+            std::cout << train_sys.delete_train(key, arg, arg_num) <<'\n';
+        }
+        if ( !strcmp(cmd, "release_train") ) {
+            std::cout << train_sys.release_train(key, arg, arg_num) <<'\n';
+        }
+        if ( !strcmp(cmd, "query_train") ) {
+            train_sys.query_train(key, arg, arg_num);
+        }
+        if ( !strcmp(cmd, "query_ticket") ) {
+            train_sys.query_ticket(key, arg, arg_num);
+        }
+        if ( !strcmp(cmd, "query_transfer") ) {
+            train_sys.query_transfer(key, arg, arg_num);
+        }
 
-        if ( !strcmp(cmd, "buy_ticket") ) {}
-        if ( !strcmp(cmd, "query_order") ) {}
-        if ( !strcmp(cmd, "refund_ticket") ) {}
+        if ( !strcmp(cmd, "buy_ticket") ) {
+            buy_ticket(key, arg, arg_num);
+        }
+        if ( !strcmp(cmd, "query_order") ) {
+            query_order(key, arg, arg_num);
+        }
+        if ( !strcmp(cmd, "refund_ticket") ) {
+            refund_ticket(key, arg, arg_num);
+        }
         if ( !strcmp(cmd, "clean") ) {
-            user.clear();
-            train.clear();
-            ticket.clear();
+            user_sys.clear();
+            train_sys.clear();
         }
         if ( !strcmp(cmd, "exit") ) { 
             std::cout <<"bye\n";
@@ -65,9 +108,154 @@ class console {
         return true;
     }
   private:
-    user_system user;
-    train_system train;
-    ticket_system ticket;
+    user_system user_sys;
+    train_system train_sys;
+
+    database<order_info> order_list;
+    database<int> waiting;
+    vector<int> waiting_list;
+    bplus_tree<user_name, int> user_order;
+
+    void buy_ticket ( char* key[], char* arg[], int len ) {
+        user_name user=get(key, arg, len, "-u");
+        if ( !user_sys.is_login(user) ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+        
+        trainID id=get(key, arg, len, "-i");
+        if ( !train_sys.released_train.count(id) ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+
+        station_name fromStation=get(key, arg, len, "-f"),
+                     toStation=get(key, arg, len, "-t");
+        Date startDate=get(key, arg, len, "-d");
+
+        int train_pos=train_sys.all_train.at(id).first;
+        train_info t_info=train_sys.train_list.read(train_pos);
+        seat_info s_info=train_sys.seat_list.read(train_pos);
+
+        int left, right;
+        for ( left=0 ; left<t_info.stationNum ; left++ ) 
+            if ( t_info.stations[left]==fromStation ) break;
+
+        Clock nowTime=t_info.startTime;
+        int deltaDate=nowTime.add(t_info.travelingTimes[left]+t_info.stopoverTimes[left]);
+        Date firstDate=startDate-deltaDate;
+
+        auto& range=t_info.saleDate;
+        if ( firstDate<range.first || firstDate>range.second ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+        Time startTime(firstDate, t_info.startTime);
+
+        int maxSeat=1000000;
+        for ( right=left ; right<t_info.stationNum ; right++ ) {
+            if ( t_info.stations[right]==toStation ) break;
+            maxSeat=std::min(maxSeat, s_info.seats[right]);
+        }
+        if ( right==t_info.stationNum ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+
+        int needSeat=atoi(get(key, arg, len, "-n"));
+        if ( needSeat<=maxSeat ) {
+            for ( int i=left ; i<right ; i++ ) 
+                s_info.seats[i]-=needSeat;
+            train_sys.seat_list.write(train_pos, s_info);
+            int pos=order_list.push_back(order_info(0, user, startTime, pos, needSeat, left, right));
+            user_order.insert(user, pos);
+            std::cout << (long long)needSeat*(long long)(t_info.prices[right]-t_info.prices[left]) <<'\n';
+            return ;
+        }
+
+        auto q_ptr=get(key, arg, len, "-q");
+        if ( *q_ptr=='f' ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+        
+        int pos=order_list.push_back(order_info(1, user, startTime, pos, needSeat, left, right));
+        user_order.insert(user, pos);
+        waiting_list.push_back(pos);
+        std::cout <<"queue\n";
+    }
+    void query_order ( char* key[], char* arg[], int len ) {
+        user_name user=(get(key, arg, len, "-u"));
+        if ( !user_sys.is_login(user) ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+
+        auto all_order=user_order.find_range(user);
+        if ( all_order.empty() ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+        all_order.sort(default_int_cmp);
+        for ( auto it=all_order.begin() ; it!=all_order.end() ; it++ ) {
+            order_info o_info=order_list.read(*it);
+            train_info t_info=train_sys.get_train(o_info.pos);
+            std::cout << STATUS[o_info.type] <<' ';
+            std::cout << t_info.id.str() <<' ';
+            std::cout << t_info.stations[o_info.from].str() <<' ';
+            Time lTime=o_info.startTime+t_info.travelingTimes[o_info.from]+t_info.stopoverTimes[o_info.from];
+            std::cout << lTime.show() <<' ';
+            std::cout <<"-> ";
+            std::cout << t_info.stations[o_info.to].str() <<' ';
+            Time aTime=o_info.startTime+t_info.travelingTimes[o_info.to];
+            std::cout << aTime.show() <<' ';
+            std::cout << t_info.prices[o_info.to]-t_info.prices[o_info.from] <<' '<< o_info.needSeat <<'\n';
+        }
+    }
+    void refund_ticket ( char* key[], char* arg[], int len ) {
+        user_name user(get(key, arg, len, "-u"));
+        if ( !user_sys.is_login(user) ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+        auto n_ptr=get(key, arg, len, "-n");
+        int order_id;
+        if ( n_ptr==nullptr ) order_id=1;
+        else order_id=atoi(n_ptr);
+
+        auto all_order=user_order.find_range(user);
+        if ( all_order.size()<order_id ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+        all_order.sort(default_int_cmp);
+        int refund_pos=all_order[order_id-1];
+        order_info refund_info=order_list.read(refund_pos);
+        if ( refund_info.type>=1 ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
+        refund_info.type=2;
+        order_list.write(refund_pos, refund_info);
+
+        for ( int i=0 ; i<waiting_list.size() ; ) {
+            int pos=waiting_list[i];
+            order_info it=order_list.read(pos);
+            seat_info s_info=train_sys.seat_list.read(it.pos);
+            int maxSeat=1000000;
+            for ( int i=it.from ; i<it.to ; i++ ) 
+                maxSeat=std::min(maxSeat, s_info.seats[i]);
+            if ( it.needSeat<=maxSeat ) {
+                for ( int i=it.from ; i<it.to ; i++ ) 
+                    s_info.seats[i]-=it.needSeat;
+                train_sys.seat_list.write(it.pos, s_info);
+                waiting_list.erase(i);
+                it.type=0;
+                order_list.write(pos, it);
+            }
+            else i++;
+        }
+    }
 };
 
 }

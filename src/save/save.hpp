@@ -11,10 +11,12 @@
 
 namespace cay {
 
+const std::ios_base::openmode default_mode=std::ios::in|std::ios::out|std::ios::binary;
+
 template < class T >
 class LRU {
   private:
-    static const int N=1e2+10, M=1e1;
+    static const int M=8096/sizeof(T), N=M+5;
     hash_map<int> mp; // pos -> list pos
     int nxt[N], pre[N], idx[N], head, tail, siz;
     T dat[N];
@@ -61,7 +63,6 @@ class LRU {
     }
 
   protected:
-    static const std::ios_base::openmode default_mode=std::ios::in|std::ios::out|std::ios::binary;
     std::fstream sav;
 
     void open ( const std::string& file_name, std::ios_base::openmode mode=default_mode ) {
@@ -107,22 +108,24 @@ class save : public LRU<T> {
   private:
     std::string name;
     int siz;
+    std::ios_base::openmode mode;
 
     int get_address () { return ++siz; }
 
   public:
     save () {}
-    void open ( const std::string& file_name, std::ios_base::openmode mode=LRU<T>::default_mode ) {
+    void open ( const std::string& file_name, std::ios_base::openmode file_mode=default_mode ) {
+        mode=file_mode;
         LRU<T>::open(file_name, mode);
         LRU<T>::sav.seekg(0, std::ios::end);
         siz=LRU<T>::sav.tellg()/sizeof(T);
     }
-    save ( const std::string& file_name, std::ios_base::openmode mode=LRU<T>::default_mode ) {
-        open(file_name, mode);
+    save ( const std::string& file_name, std::ios_base::openmode file_mode=default_mode ) {
+        open(file_name, file_mode);
     }
 
-    ~save () {} 
     void close () {}
+    ~save () {}
 
     T read ( int pos ) {
         if ( pos<1 || pos>siz ) throw read_eof();
@@ -151,12 +154,71 @@ class save : public LRU<T> {
     }
 
     void clear () {
-        close();
+        LRU<T>::sav.close();
         std::fstream clr_sav(name, std::ios::out|std::ios::binary|std::ios::trunc);
         clr_sav.seekp(0, std::ios::beg);
         clr_sav.close();
+        LRU<T>::open(name, mode);
+    }
+};
+
+template < class T, const int offset=0 >
+class database {
+  public:
+    database () {}
+    void open ( const std::string& file_name ) {
+        name=file_name;
+        std::ifstream checker(file_name);
+        if ( !checker.is_open() ) 
+            std::ofstream create(file_name);
+        sav.open(file_name, default_mode);
+
+        sav.seekg(0, std::ios::end);
+        siz=(sav.tellg()-offset)/sizeof(T);
+    }
+    database ( const std::string& file_name ) { open(file_name); }
+    void close () { sav.close(); }
+    ~database () { close(); }
+
+    T read ( int pos ) {
+        T ret;
+        sav.seekg(offset+sizeof(T)*(pos-1));
+        sav.read(reinterpret_cast<char*>(&ret), sizeof(T));
+        return ret;
+    }
+    void write ( int pos, const T& data ) {
+        sav.seekp(offset+sizeof(T)*(pos-1));
+        sav.write(reinterpret_cast<const char*>(&data), sizeof(T));
     }
 
+    template < class U >
+    void get_header ( U& x ) {
+        sav.seekg(0, std::ios::beg);
+        sav.read(reinterpret_cast<char*>(&x), offset);
+    }
+    template < class U >
+    void put_header ( const U& x ) {
+        sav.seekg(0, std::ios::beg);
+        sav.write(reinterpret_cast<const char*>(&x), offset);
+    }
+
+    int push_back ( const T& data ) {
+        write(++siz, data);
+        return siz;
+    }
+    int size () { return siz; }
+
+    void clear () {
+        sav.close();
+        std::fstream clr_sav(name, std::ios::out|std::ios::binary|std::ios::trunc);
+        clr_sav.seekp(0, std::ios::beg);
+        clr_sav.close();
+        sav.open(name, default_mode);
+    }
+  private:
+    std::fstream sav;
+    std::string name;
+    int siz;
 };
 
 }
