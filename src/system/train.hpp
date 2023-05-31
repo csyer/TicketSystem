@@ -28,6 +28,52 @@ struct train_info {
         memset(travelingTimes, 0, sizeof(travelingTimes));
         memset(stopoverTimes, 0, sizeof(stopoverTimes));
     }
+
+    train_info ( const train_info& obj ):
+        id(obj.id), stationNum(obj.stationNum), seatNum(obj.seatNum), 
+        startTime(obj.startTime), saleDate(obj.saleDate), type(obj.type) {
+        memcpy(stations, obj.stations, sizeof(stations));
+        memcpy(prices, obj.prices, sizeof(prices));
+        memcpy(travelingTimes, obj.travelingTimes, sizeof(travelingTimes));
+        memcpy(stopoverTimes, obj.stopoverTimes, sizeof(stopoverTimes));
+    }
+    train_info ( const train_info&& obj ):
+        id(obj.id), stationNum(obj.stationNum), seatNum(obj.seatNum), 
+        startTime(obj.startTime), saleDate(obj.saleDate), type(obj.type) {
+        memcpy(stations, obj.stations, sizeof(stations));
+        memcpy(prices, obj.prices, sizeof(prices));
+        memcpy(travelingTimes, obj.travelingTimes, sizeof(travelingTimes));
+        memcpy(stopoverTimes, obj.stopoverTimes, sizeof(stopoverTimes));
+    }
+    
+    train_info& operator= ( const train_info& obj ) {
+        if ( &obj==this ) return *this;
+        id=obj.id, 
+        stationNum=obj.stationNum, 
+        seatNum=obj.seatNum, 
+        startTime=obj.startTime, 
+        saleDate=obj.saleDate, 
+        type=obj.type;
+        memcpy(stations, obj.stations, sizeof(stations));
+        memcpy(prices, obj.prices, sizeof(prices));
+        memcpy(travelingTimes, obj.travelingTimes, sizeof(travelingTimes));
+        memcpy(stopoverTimes, obj.stopoverTimes, sizeof(stopoverTimes));
+        return *this;
+    }
+    train_info& operator= ( const train_info&& obj ) {
+        if ( &obj==this ) return *this;
+        id=obj.id, 
+        stationNum=obj.stationNum, 
+        seatNum=obj.seatNum, 
+        startTime=obj.startTime, 
+        saleDate=obj.saleDate, 
+        type=obj.type;
+        memcpy(stations, obj.stations, sizeof(stations));
+        memcpy(prices, obj.prices, sizeof(prices));
+        memcpy(travelingTimes, obj.travelingTimes, sizeof(travelingTimes));
+        memcpy(stopoverTimes, obj.stopoverTimes, sizeof(stopoverTimes));
+        return *this;
+    }
 };
 struct seat_info {
     int stationNum, seats[100];
@@ -36,6 +82,26 @@ struct seat_info {
         memset(seats, 0, sizeof(seats));
         for ( int i=0 ; i<stationNum-1 ; i++ ) 
             seats[i]=_seatNum;
+    }
+
+    seat_info ( const seat_info& obj ):stationNum(obj.stationNum) {
+        memcpy(seats, obj.seats, sizeof(seats));
+    }
+    seat_info ( const seat_info&& obj ):stationNum(obj.stationNum) {
+        memcpy(seats, obj.seats, sizeof(seats));
+    }
+
+    seat_info& operator= ( const seat_info& obj ) {
+        if ( &obj==this ) return *this;
+        stationNum=obj.stationNum;
+        memcpy(seats, obj.seats, sizeof(seats));
+        return *this;
+    }
+    seat_info& operator= ( const seat_info&& obj ) {
+        if ( &obj==this ) return *this;
+        stationNum=obj.stationNum;
+        memcpy(seats, obj.seats, sizeof(seats));
+        return *this;
     }
 };
 struct ticket_info {
@@ -49,6 +115,7 @@ struct ticket_info {
                   const int& _price, const int& _time, const int& _seat ):
         id(_id), leavingTime(_leavingTime), arrivingTime(_arrivingTime),
         price(_price), time(_time), seat(_seat) {}
+
     ticket_info ( const ticket_info& obj ) {
         id=obj.id;
         leavingTime=obj.leavingTime;
@@ -56,6 +123,34 @@ struct ticket_info {
         price=obj.price;
         time=obj.time;
         seat=obj.seat;
+    }
+    ticket_info ( const ticket_info&& obj ) {
+        id=obj.id;
+        leavingTime=obj.leavingTime;
+        arrivingTime=obj.arrivingTime;
+        price=obj.price;
+        time=obj.time;
+        seat=obj.seat;
+    }
+    ticket_info& operator= ( const ticket_info& obj ) {
+        if ( &obj==this ) return *this;
+        id=obj.id;
+        leavingTime=obj.leavingTime;
+        arrivingTime=obj.arrivingTime;
+        price=obj.price;
+        time=obj.time;
+        seat=obj.seat;
+        return *this;
+    }
+    ticket_info& operator= ( const ticket_info&& obj ) {
+        if ( &obj==this ) return *this;
+        id=obj.id;
+        leavingTime=obj.leavingTime;
+        arrivingTime=obj.arrivingTime;
+        price=obj.price;
+        time=obj.time;
+        seat=obj.seat;
+        return *this;
     }
 };
 bool compare_with_price ( const ticket_info& a, const ticket_info& b ) {
@@ -99,7 +194,7 @@ class train_system : public system {
     }
 
     int add_train ( char* key[], char* arg[], int len ) {
-        trainID id=get(key, arg, len, "-i");
+        trainID id(get(key, arg, len, "-i"));
         if ( all_train.count(id) ) return FAIL;
 
         train_info info;
@@ -158,7 +253,7 @@ class train_system : public system {
     }
 
     void query_train ( char* key[], char* arg[], int len ) {
-        trainID id=get(key, arg, len, "-i");
+        trainID id(get(key, arg, len, "-i"));
 
         int is_released=0;
         if ( released_train.count(id) ) is_released=1;
@@ -207,17 +302,17 @@ class train_system : public system {
     void query_ticket ( char* key[], char* arg[], int len ) {
         vector<ticket_info> ret;
 
-        station_name fromStation=get(key, arg, len, "-s"),
-                     toStation=get(key, arg, len, "-t");
-        vector<int> from_train=station_list.find_range({fromStation, -1}, {fromStation, 100000000}),
-                    to_train=station_list.find_range({toStation, -1}, {toStation, 100000000});
+        station_name fromStation(get(key, arg, len, "-s")),
+                     toStation(get(key, arg, len, "-t"));
+        vector<int> from_train(station_list.find_range({fromStation, -1}, {fromStation, 100000000})),
+                    to_train(station_list.find_range({toStation, -1}, {toStation, 100000000}));
         Date startDate(get(key, arg, len, "-d"));
         from_train.sort(default_int_cmp_less);
         to_train.sort(default_int_cmp_less);
         int size_from=from_train.size(), size_to=to_train.size();
         for ( int i=0, j=0 ; j<size_to && i<size_from ; i++ ) {
 
-            train_info t_info=train_list.read(from_train[i]);
+            train_info t_info(train_list.read(from_train[i]));
             while ( j<size_to && from_train[i]>to_train[j] ) j++;
             if ( j==size_to || from_train[i]!=to_train[j] ) continue;
 
@@ -233,16 +328,15 @@ class train_system : public system {
             if ( firstDate<range.first || firstDate>range.second ) continue;
             Time startTime(firstDate, t_info.startTime);
 
-            int s_pos=date_seat.at(pair<int, Date>(from_train[i], firstDate)).first;
-            seat_info s_info=seat_list.read(s_pos);
-
-            int maxSeat=1000000;
-            for ( right=left ; right<t_info.stationNum ; right++ ) {
+            for ( right=left ; right<t_info.stationNum ; right++ )
                 if ( t_info.stations[right]==toStation ) break;
-                maxSeat=std::min(maxSeat, s_info.seats[right]);
-            }
             if ( right==t_info.stationNum ) continue;
 
+            int s_pos=date_seat.at(pair<int, Date>(from_train[i], firstDate)).first;
+            seat_info s_info(seat_list.read(s_pos));
+
+            int maxSeat=1000000;
+            for ( int i=left ; i<right ; i++ ) maxSeat=std::min(maxSeat, s_info.seats[i]);
             Time lTime=startTime+t_info.travelingTimes[left]+t_info.stopoverTimes[left],
                 aTime=startTime+t_info.travelingTimes[right];
             int sumTime=t_info.travelingTimes[right]-t_info.travelingTimes[left]-t_info.stopoverTimes[left],
@@ -256,8 +350,8 @@ class train_system : public system {
         else ret.sort(compare_with_price);
 
         std::cout << ret.size() <<'\n';
-        for ( auto it=ret.begin() ; it!=ret.end() ; it++ ) {
-            ticket_info ticket=*it;
+        for ( auto i=0 ; i<ret.size() ; i++ ) {
+            ticket_info& ticket=ret[i];
             std::cout << ticket.id.str() <<' ';
             std::cout << fromStation.str() <<' ';
             std::cout << ticket.leavingTime.show() <<' ';
@@ -279,15 +373,15 @@ class train_system : public system {
             std::cout << train.price <<' '<< train.seat <<'\n';
         };
 
-        station_name fromStation=get(key, arg, len, "-s"),
-                     toStation=get(key, arg, len, "-t");
-        vector<int> fromTrain=station_list.find_range({fromStation, -1}, {fromStation, 100000000}),
-                    toTrain=station_list.find_range({toStation, -1}, {toStation, 100000000});
+        station_name fromStation(get(key, arg, len, "-s")),
+                     toStation(get(key, arg, len, "-t"));
+        vector<int> fromTrain(station_list.find_range({fromStation, -1}, {fromStation, 100000000})),
+                    toTrain(station_list.find_range({toStation, -1}, {toStation, 100000000}));
         Date startDate(get(key, arg, len, "-d"));
 
         vector<station_info> trans_list;
-        for ( auto it=fromTrain.begin() ; it!=fromTrain.end() ; it++ ) {
-            train_info t_info=train_list.read(*it);
+        for ( int i=0 ; i<fromTrain.size() ; i++ ) {
+            train_info t_info(train_list.read(fromTrain[i]));
 
             int left, right;
             for ( left=0 ; left<t_info.stationNum ; left++ ) 
@@ -301,8 +395,8 @@ class train_system : public system {
             if ( firstDate<range.first || firstDate>range.second ) continue;
             Time startTime(firstDate, t_info.startTime);
 
-            int s_pos=date_seat.at(pair<int, Date>(*it, firstDate)).first;
-            seat_info s_info=seat_list.read(s_pos);
+            int s_pos=date_seat.at(pair<int, Date>(fromTrain[i], firstDate)).first;
+            seat_info s_info(seat_list.read(s_pos));
             
             int maxSeat=1000000;
             for ( right=left+1 ; right<t_info.stationNum ; right++ ) { 
@@ -312,7 +406,7 @@ class train_system : public system {
                 maxSeat=std::min(maxSeat, s_info.seats[right-1]);
                 int sumPrice=t_info.prices[right]-t_info.prices[left];
 
-                trans_list.push_back(station_info(t_info.id, *it, sumPrice, maxSeat, from, to, lTime, aTime));
+                trans_list.push_back(station_info(t_info.id, fromTrain[i], sumPrice, maxSeat, from, to, lTime, aTime));
             }
         }
         
