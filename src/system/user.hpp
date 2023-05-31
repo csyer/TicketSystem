@@ -149,13 +149,16 @@ class user_system : public system {
         auto ptr_g=get(key, arg, len, "-g");
         if ( ptr_g!=nullptr ) new_info.privilege=atoi(ptr_g);
 
-        if ( new_info>=cur_info ) {
-            std::cout << FAIL <<'\n';
+        if ( cur_user==user ) {
+            if ( new_info<=cur_info ) {
+                user_list.update(user, new_info);
+                std::cout << user.str()+" "+new_info.show() <<'\n';
+            }
+            else std::cout << FAIL <<'\n';
             return ;
         }
-        if ( cur_user==user ) {
-            user_list.update(user, new_info);
-            std::cout << user.str()+" "+new_info.show() <<'\n';
+        if ( new_info>=cur_info ) {
+            std::cout << FAIL <<'\n';
             return ;
         }
         if ( cur_info<=info ) {
