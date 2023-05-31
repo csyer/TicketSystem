@@ -126,7 +126,7 @@ class bplus_tree {
     };
     save<node> f_tree;
     database<T> f_data;
-    int root;
+    int root, siz;
     std::string path_name;
 
     using iterator=pair<node, int>;
@@ -365,12 +365,13 @@ class bplus_tree {
         std::ifstream checker(path_name+"temp.dat");
         if ( !checker.is_open() ) {
             std::ofstream create(path_name+"temp.dat");
-            root=0;
+            root=siz=0;
             create.close();
         }
         else {
             checker.seekg(0, std::ios::beg);
             checker.read(reinterpret_cast<char*>(&root), sizeof(int));
+            checker.read(reinterpret_cast<char*>(&siz), sizeof(int));
         }
         checker.close();
     }
@@ -379,6 +380,7 @@ class bplus_tree {
         std::ofstream reset(path_name+"temp.dat");
         reset.seekp(0, std::ios::beg);
         reset.write(reinterpret_cast<const char*>(&root), sizeof(int));
+        reset.write(reinterpret_cast<const char*>(&siz), sizeof(int));
         reset.close();
         f_tree.close(),
         f_data.close();
@@ -410,6 +412,7 @@ class bplus_tree {
     }
 
     bool insert ( const Key& key, const T& data ) {
+        ++siz;
         // if ( find(key).second ) return 0;
 
         int data_addr=f_data.push_back(data);
@@ -430,6 +433,7 @@ class bplus_tree {
     }
     bool erase ( const Key& key ) {
         if ( !root ) return 0;
+        --siz;
 
         auto pr=find(key);
         if ( !pr.second ) return 0;
@@ -499,11 +503,12 @@ class bplus_tree {
     }
 
     bool empty () { return root==0; }
+    int size () { return siz; }
 
     void clear () {
         f_tree.clear();
         f_data.clear();
-        root=0;
+        root=siz=0;
     }
 
 };
