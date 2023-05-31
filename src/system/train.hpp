@@ -145,7 +145,7 @@ class train_system : public system {
         if ( !pr.second || released_train.count(id) ) return FAIL;
         train_info info=train_list.read(pr.first);
         for ( int i=0 ; i<info.stationNum ; i++ ) 
-            station_list.insert(info.stations[i], pr.first);
+            station_list.insert({info.stations[i], pr.first}, 0);
 
         seat_info s_info(info.stationNum, info.seatNum);
         for ( Date i=info.saleDate.first ; i<=info.saleDate.second ; ++i ) {
@@ -209,19 +209,19 @@ class train_system : public system {
 
         station_name fromStation=get(key, arg, len, "-s"),
                      toStation=get(key, arg, len, "-t");
-        vector<int> from_train=station_list.find_range(fromStation),
-                    to_train=station_list.find_range(toStation);
+        vector<int> from_train=station_list.find_range({fromStation, -1}, {fromStation, 100000000}),
+                    to_train=station_list.find_range({toStation, -1}, {toStation, 100000000});
         Date startDate(get(key, arg, len, "-d"));
-
         from_train.sort(default_int_cmp_less);
         to_train.sort(default_int_cmp_less);
         int size_from=from_train.size(), size_to=to_train.size();
         for ( int i=0, j=0 ; j<size_to && i<size_from ; i++ ) {
+
             train_info t_info=train_list.read(from_train[i]);
             while ( j<size_to && from_train[i]>to_train[j] ) j++;
             if ( j==size_to || from_train[i]!=to_train[j] ) continue;
 
-            int left, right;
+            int left=0, right=0;
             for ( left=0 ; left<t_info.stationNum ; left++ ) 
                 if ( t_info.stations[left]==fromStation ) break;
 
@@ -251,7 +251,6 @@ class train_system : public system {
 
             j++;
         }
-
         auto p_ptr=get(key, arg, len, "-p");
         if ( p_ptr==nullptr || *p_ptr=='t' ) ret.sort(compare_with_time);
         else ret.sort(compare_with_price);
@@ -282,8 +281,8 @@ class train_system : public system {
 
         station_name fromStation=get(key, arg, len, "-s"),
                      toStation=get(key, arg, len, "-t");
-        vector<int> fromTrain=station_list.find_range(fromStation),
-                    toTrain=station_list.find_range(toStation);
+        vector<int> fromTrain=station_list.find_range({fromStation, -1}, {fromStation, 100000000}),
+                    toTrain=station_list.find_range({toStation, -1}, {toStation, 100000000});
         Date startDate(get(key, arg, len, "-d"));
 
         vector<station_info> trans_list;
@@ -454,7 +453,7 @@ class train_system : public system {
     bplus_tree<pair<int, Date>, int> date_seat;
     bplus_tree<trainID, int> all_train;
     bplus_tree<trainID, int> released_train;
-    bplus_tree<station_name, int> station_list;
+    bplus_tree<pair<station_name, int>, char> station_list;
 };
 
 }

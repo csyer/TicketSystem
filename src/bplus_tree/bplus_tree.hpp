@@ -472,8 +472,8 @@ class bplus_tree {
 
         return ret;
     }
-    vector<T> find_range ( const Key& beg, const Key& end ) {
-        vector<T> ret;
+    vector<int> find_range ( const Key& beg, const Key& end ) {
+        vector<int> ret;
 
         auto pr=upper_bound(beg);
         node nod=pr.first.first;
@@ -486,7 +486,7 @@ class bplus_tree {
         }
 
         while ( !Comp()(end, nod.keys[id]) ) {
-            ret.push_back(f_data.read(nod.cihld[id]));
+            ret.push_back(nod.keys[id].second);
             ++id;
             if ( id==nod.siz ) {
                 if ( !nod.right ) break;

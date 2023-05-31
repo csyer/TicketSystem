@@ -16,7 +16,7 @@ const std::ios_base::openmode default_mode=std::ios::in|std::ios::out|std::ios::
 template < class T >
 class LRU {
   private:
-    static const int M=std::max(500ul, 4000/sizeof(T)), N=M+5;
+    static const int M=std::max(200ul, 4000/sizeof(T)), N=M+5;
     hash_map<int> mp; // pos -> list pos
     int nxt[N], pre[N], idx[N], head, tail, siz;
     T dat[N];
@@ -152,6 +152,10 @@ class save : public LRU<T> {
         write(pos,data);
         return pos;
     }
+    int push_back ( const T& data ) {
+        write(++siz, data);
+        return siz;
+    }
 
     void clear () {
         LRU<T>::sav.close();
@@ -194,17 +198,6 @@ class database {
         sav.seekp(sizeof(T)*(pos-1));
         sav.write(reinterpret_cast<const char*>(&data), sizeof(T));
     }
-
-    // template < class U >
-    // void get_header ( U& x ) {
-    //     sav.seekg(0, std::ios::beg);
-    //     sav.read(reinterpret_cast<char*>(&x), offset);
-    // }
-    // template < class U >
-    // void put_header ( const U& x ) {
-    //     sav.seekg(0, std::ios::beg);
-    //     sav.write(reinterpret_cast<const char*>(&x), offset);
-    // }
 
     int push_back ( const T& data ) {
         write(++siz, data);

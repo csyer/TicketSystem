@@ -10,7 +10,7 @@ namespace cay {
 template < class T >
 class hash_map {
   private:
-    static const int M=2e3+10, N=2e3;
+    static const int M=500+10, N=500;
     int nxt[M], key[M], lst[M], cnt;
     int stk[M], top;
     T dat[M];
