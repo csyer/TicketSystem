@@ -137,7 +137,7 @@ class Clock {
     }
 
     int operator- ( const Clock& rhs ) {
-        return (rhs.hour*24+rhs.minute)-(hour*24+minute);
+        return (hour*24+minute)-(rhs.hour*24+rhs.minute);
     }
 
     int add ( const int delta ) {
@@ -153,7 +153,7 @@ class Clock {
         return hour==obj.hour && minute==obj.minute;
     }
     bool operator< ( const Clock& obj ) const {
-        return hour*60+minute<obj.hour*60+obj.minute;
+        return (hour*60+minute)<(obj.hour*60+obj.minute);
     }
     bool operator> ( const Clock& obj ) const {
         return obj<*this;
@@ -222,7 +222,7 @@ class Date {
     }
 
     int operator- ( const Date& rhs ) {
-        return (sumday[rhs.month-1]+rhs.day)-(sumday[month-1]+day);
+        return (sumday[month-1]+day)-(sumday[rhs.month-1]+rhs.day);
     }
 
     bool operator== ( const Date& obj ) const {

@@ -171,8 +171,10 @@ class database {
         name=file_path+file_name;
         std::filesystem::create_directories(file_path);
         std::ifstream checker(name);
-        if ( !checker.is_open() ) 
+        if ( !checker.is_open() ) {
             std::ofstream create(name);
+            create.close();
+        }
         sav.open(name, default_mode);
 
         sav.seekg(0, std::ios::end);

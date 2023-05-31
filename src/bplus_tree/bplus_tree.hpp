@@ -15,7 +15,7 @@ namespace cay {
 template < class Key, class T, class Comp=std::less<Key> >
 class bplus_tree {
   private:
-    const static int BLOCK_SIZE=4096; //4kb
+    const static int BLOCK_SIZE=4000; //4kb
     const static int M=std::max(4ul, BLOCK_SIZE/sizeof(Key));
     // const static int M=4;
     const static int LOW=M/2, SIZ=LOW+1, HIGH=M;

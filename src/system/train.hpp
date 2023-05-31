@@ -341,7 +341,7 @@ class train_system : public system {
                         firstDate=startDate-deltaDate;
                         auto& range=t_info.saleDate;
                         if ( firstDate>range.second ) continue;
-                        if ( firstDate<range.first<0 ) firstDate=range.first;
+                        if ( firstDate<range.first ) firstDate=range.first;
                     }
                     else {
                         Date startDate=trans_info.arrivingTime.get_date()+1;

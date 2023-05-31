@@ -41,7 +41,7 @@ class console : public system {
 
     bool solve () {
         static char input[32768];
-        std::cin.getline(input, 32767);
+        std::cin.getline(input, 32768);
 
         int arg_num=0;
         char* id=strtok(input, " ");
@@ -159,6 +159,11 @@ class console : public system {
 
         int s_pos=train_sys.date_seat.at(pair<int, Date>(t_pos, firstDate)).first;
         seat_info s_info=train_sys.seat_list.read(s_pos);
+
+        if ( !train_sys.date_seat.at(pair<int, Date>(t_pos, firstDate)).second ) {
+            std::cerr << firstDate.show() <<' '<< range.first.show() <<' '<< range.second.show() <<'\n';
+            train_sys.date_seat.debug(1);
+        }
 
         int maxSeat=1000000;
         for ( right=left ; right<t_info.stationNum ; right++ ) {

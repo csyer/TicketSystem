@@ -12,13 +12,13 @@ namespace cay {
 using user_name=string<20>;
 struct user_info {
     string<30> password, mailAddr;
-    string<20> name;
+    string<15> name;
     int privilege;
 
     user_info () {}
     user_info ( const string<30> _password, 
                 const string<30> _mailAddr, 
-                const string<20> _name, 
+                const string<15> _name, 
                 const char* _privilege="10" ):
         password(_password), 
         mailAddr(_mailAddr), 
@@ -72,7 +72,7 @@ class user_system : public system {
 
         auto ptr=get(key, arg, len, "-c");
         if ( ptr==nullptr ) return add_user(new_user, new_info);
-        user_name cur_user=ptr;
+        user_name cur_user(ptr);
 
         if ( !user_log.count(cur_user) ) return FAIL;
         user_info cur_info=user_list.at(cur_user).first;
@@ -110,6 +110,11 @@ class user_system : public system {
 
         auto pr=user_list.at(user);
         auto info=pr.first;
+
+        if ( !pr.second ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
         if ( cur_info<=info ) {
             std::cout << FAIL <<'\n';
             return ;
@@ -151,9 +156,11 @@ class user_system : public system {
         if ( cur_user==user ) {
             user_list.update(user, new_info);
             std::cout << user.str()+" "+new_info.show() <<'\n';
+            return ;
         }
         if ( cur_info<=info ) {
             std::cout << FAIL <<'\n';
+            return ;
         }
         user_list.update(user, new_info);
         std::cout << user.str()+" "+new_info.show() <<'\n';
