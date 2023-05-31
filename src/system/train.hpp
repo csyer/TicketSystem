@@ -459,15 +459,16 @@ class train_system : public system {
                         sumPrice=trans_info.price+t_info.prices[right]-t_info.prices[left],
                         sPrice=t_info.prices[right]-t_info.prices[left];
                     station_name from=trans_info.to, to=toStation;
-
                     trainID nowId=t_info.id;
+                    station_info second_train(station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime));
+
                     int solved=0;
                     if ( flg ) {
                         if ( sumTime!=minTime ) {
                             solved=1;
                             if ( sumTime<minTime ) {
                                 train1=trans_info, 
-                                train2=station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime);
+                                train2=second_train,
                                 minTime=sumTime, minPrice=sumPrice;
                             }
                         }
@@ -476,7 +477,7 @@ class train_system : public system {
                                 solved=1;
                                 if ( sumPrice<minPrice ) {
                                     train1=trans_info, 
-                                    train2=station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime);
+                                    train2=second_train;
                                     minTime=sumTime, minPrice=sumPrice;
                                 }
                             }
@@ -487,7 +488,7 @@ class train_system : public system {
                             solved=1;
                             if ( sumPrice<minPrice ) {
                                 train1=trans_info, 
-                                train2=station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime);
+                                train2=second_train;
                                 minTime=sumTime, minPrice=sumPrice;
                             }
                         }
@@ -496,7 +497,7 @@ class train_system : public system {
                                 solved=1;
                                 if ( sumTime<minTime ) {
                                     train1=trans_info, 
-                                    train2=station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime);
+                                    train2=second_train;
                                     minTime=sumTime, minPrice=sumPrice;
                                 }
                             }
