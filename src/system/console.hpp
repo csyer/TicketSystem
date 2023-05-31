@@ -137,6 +137,11 @@ class console : public system {
 
         int t_pos=train_sys.all_train.at(id).first;
         train_info t_info=train_sys.train_list.read(t_pos);
+        int needSeat=atoi(get(key, arg, len, "-n"));
+        if ( needSeat>t_info.seatNum ) {
+            std::cout << FAIL <<'\n';
+            return ;
+        }
 
         int left, right;
         for ( left=0 ; left<t_info.stationNum ; left++ ) 
@@ -160,11 +165,6 @@ class console : public system {
         int s_pos=train_sys.date_seat.at(pair<int, Date>(t_pos, firstDate)).first;
         seat_info s_info=train_sys.seat_list.read(s_pos);
 
-        if ( !train_sys.date_seat.at(pair<int, Date>(t_pos, firstDate)).second ) {
-            std::cerr << firstDate.show() <<' '<< range.first.show() <<' '<< range.second.show() <<'\n';
-            train_sys.date_seat.debug(1);
-        }
-
         int maxSeat=1000000;
         for ( right=left ; right<t_info.stationNum ; right++ ) {
             if ( t_info.stations[right]==toStation ) break;
@@ -174,8 +174,6 @@ class console : public system {
             std::cout << FAIL <<'\n';
             return ;
         }
-
-        int needSeat=atoi(get(key, arg, len, "-n"));
 
         if ( needSeat<=maxSeat ) {
             for ( int i=left ; i<right ; i++ ) 
@@ -192,7 +190,7 @@ class console : public system {
             std::cout << FAIL <<'\n';
             return ;
         }
-        
+
         int o_pos=order_list.push_back(order_info(1, user, startTime, t_pos, needSeat, left, right));
         user_order.insert(user, o_pos);
         waiting_list.push_back(o_pos);

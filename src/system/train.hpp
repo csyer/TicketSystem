@@ -364,7 +364,6 @@ class train_system : public system {
                         sPrice=t_info.prices[right]-t_info.prices[left];
                     station_name from=trans_info.to, to=toStation;
 
-
                     trainID nowId=t_info.id;
                     int solved=0;
                     if ( flg ) {
@@ -440,6 +439,7 @@ class train_system : public system {
     void clear () {
         train_list.clear();
         seat_list.clear();
+        date_seat.clear();
         all_train.clear();
         released_train.clear();
         station_list.clear();

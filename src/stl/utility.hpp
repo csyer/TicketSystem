@@ -137,7 +137,7 @@ class Clock {
     }
 
     int operator- ( const Clock& rhs ) {
-        return (hour*24+minute)-(rhs.hour*24+rhs.minute);
+        return (hour*60+minute)-(rhs.hour*60+rhs.minute);
     }
 
     int add ( const int delta ) {
@@ -153,7 +153,7 @@ class Clock {
         return hour==obj.hour && minute==obj.minute;
     }
     bool operator< ( const Clock& obj ) const {
-        return (hour*60+minute)<(obj.hour*60+obj.minute);
+        return hour<obj.hour || ( hour==obj.hour && minute<obj.minute );
     }
     bool operator> ( const Clock& obj ) const {
         return obj<*this;
