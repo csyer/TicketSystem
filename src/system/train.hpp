@@ -243,10 +243,10 @@ class train_system : public system {
             station_list.insert({info.stations[i], pr.first}, 0);
 
         seat_info s_info(info.stationNum, info.seatNum);
-        for ( Date i=info.saleDate.first ; i<=info.saleDate.second ; ++i ) {
-            int s_pos=seat_list.push_back(s_info);
-            date_seat.insert(pair<int, Date>(pr.first, i), s_pos);
-        }
+        int s_pos=seat_list.push_back(s_info);
+        date_seat.insert(pr.first, s_pos);
+        for ( Date i=info.saleDate.first+1 ; i<=info.saleDate.second ; ++i )
+            seat_list.push_back(s_info);
 
         released_train.insert(id, 0);
         return SUCCESS;
@@ -276,7 +276,7 @@ class train_system : public system {
         int s_pos;
         seat_info s_info;
         if ( is_released ) {
-            s_pos=date_seat.at(pair<int, Date>(t_pos, startDate)).first;
+            s_pos=date_seat.at(t_pos).first+(startDate-t_info.saleDate.first);
             s_info=seat_list.read(s_pos);
         }
 
@@ -315,7 +315,7 @@ class train_system : public system {
             if ( j==size_to || from_train[i]!=to_train[j] ) continue;
 
             train_info t_info(train_list.read(from_train[i]));
-            int left=0, right=0;
+            int left, right;
             for ( left=0 ; left<t_info.stationNum ; left++ ) 
                 if ( t_info.stations[left]==fromStation ) break;
 
@@ -326,15 +326,16 @@ class train_system : public system {
             auto& range=t_info.saleDate;
             if ( firstDate<range.first || firstDate>range.second ) continue;
             Time startTime(firstDate, t_info.startTime);
+            int dT=firstDate-range.first;
 
             for ( right=left ; right<t_info.stationNum ; right++ )
                 if ( t_info.stations[right]==toStation ) break;
             if ( right==t_info.stationNum ) continue;
 
-            int s_pos=date_seat.at(pair<int, Date>(from_train[i], firstDate)).first;
+            int s_pos=date_seat.at(from_train[i]).first+dT;
             seat_info s_info(seat_list.read(s_pos));
             int maxSeat=1000000;
-            for ( int i=left ; i<right ; i++ ) maxSeat=std::min(maxSeat, s_info.seats[i]);
+            for ( int k=left ; k<right ; k++ ) maxSeat=std::min(maxSeat, s_info.seats[k]);
 
             Time lTime=startTime+t_info.travelingTimes[left]+t_info.stopoverTimes[left],
                  aTime=startTime+t_info.travelingTimes[right];
@@ -393,8 +394,9 @@ class train_system : public system {
             auto& range=t_info.saleDate;
             if ( firstDate<range.first || firstDate>range.second ) continue;
             Time startTime(firstDate, t_info.startTime);
+            int dT=firstDate-range.first;
 
-            int s_pos=date_seat.at(pair<int, Date>(fromTrain[i], firstDate)).first;
+            int s_pos=date_seat.at(fromTrain[i]).first+dT;
             seat_info s_info(seat_list.read(s_pos));
             
             int maxSeat=1000000;
@@ -408,7 +410,6 @@ class train_system : public system {
                 trans_list.push_back(station_info(t_info.id, fromTrain[i], sumPrice, maxSeat, from, to, lTime, aTime));
             }
         }
-        
         int flg=0;
         auto p_ptr=get(key, arg, len, "-p");
         if ( p_ptr==nullptr || *p_ptr=='t' ) flg=1;
@@ -431,27 +432,20 @@ class train_system : public system {
                     Clock nowTime=t_info.startTime;
                     int deltaDate=nowTime.add(t_info.travelingTimes[left]+t_info.stopoverTimes[left]);
                     Time lTime, aTime;
-                    Date firstDate;
-                    if ( trans_info.arrivingTime.get_clock()<=nowTime ) {
-                        Date startDate=trans_info.arrivingTime.get_date();
-                        firstDate=startDate-deltaDate;
-                        auto& range=t_info.saleDate;
-                        if ( firstDate>range.second ) continue;
-                        if ( firstDate<range.first ) firstDate=range.first;
-                    }
-                    else {
-                        Date startDate=trans_info.arrivingTime.get_date()+1;
-                        firstDate=startDate-deltaDate;
-                        auto& range=t_info.saleDate;
-                        if ( firstDate>range.second ) continue;
-                        if ( firstDate<range.first ) firstDate=range.first;
-                    }
+                    Date firstDate, startDate;
+                    if ( trans_info.arrivingTime.get_clock()<=nowTime ) 
+                        startDate=trans_info.arrivingTime.get_date();
+                    else startDate=trans_info.arrivingTime.get_date()+1;
+                    firstDate=startDate-deltaDate;
+                    auto& range=t_info.saleDate;
+                    if ( firstDate>range.second ) continue;
+                    if ( firstDate<range.first ) firstDate=range.first;
                     Time startTime(firstDate, t_info.startTime);
                     lTime=startTime+t_info.travelingTimes[left]+t_info.stopoverTimes[left];
                     aTime=startTime+t_info.travelingTimes[right];
 
-                    int s_pos=date_seat.at(pair<int, Date>(toTrain[k], firstDate)).first, maxSeat=1000000;
-                    seat_info s_info=seat_list.read(s_pos);
+                    int s_pos=date_seat.at(toTrain[k]).first+(firstDate-range.first), maxSeat=1000000;
+                    seat_info s_info(seat_list.read(s_pos));
                     for ( int k=left ; k<right ; k++ ) 
                         maxSeat=std::min(maxSeat, s_info.seats[k]);
 
@@ -544,7 +538,7 @@ class train_system : public system {
   private:
     database<train_info> train_list;
     database<seat_info> seat_list;
-    bplus_tree<pair<int, Date>, int> date_seat;
+    bplus_tree<int, int> date_seat;
     bplus_tree<trainID, int> all_train;
     bplus_tree<trainID, int> released_train;
     bplus_tree<pair<station_name, int>, char> station_list;

@@ -2,6 +2,7 @@
 #define SJTU_CONSOLE_HPP
 
 #include "vector.hpp"
+#include "list.hpp"
 
 #include "system.hpp"
 #include "train.hpp"
@@ -13,12 +14,58 @@ struct order_info {
     int type;
     user_name user;
     Time startTime;
-    int pos, needSeat, from, to;
+    int pos, needSeat, from, to, deltaTime;
     order_info () {}
     order_info ( int _type, const user_name& _user, const Time& _startTime,
-                 int _pos, int _needSeat, int _from, int _to ):
+                 int _pos, int _needSeat, int _from, int _to, int _deltaTime ):
         type(_type), user(_user), startTime(_startTime), 
-        pos(_pos), needSeat(_needSeat), from(_from), to(_to) {}
+        pos(_pos), needSeat(_needSeat), from(_from), to(_to), deltaTime(_deltaTime) {}
+
+    order_info ( const order_info& obj ) {
+        type=obj.type;
+        user=obj.user;
+        startTime=obj.startTime;
+        pos=obj.pos;
+        needSeat=obj.needSeat;
+        from=obj.from;
+        to=obj.to;
+        deltaTime=obj.deltaTime;
+    }
+    order_info ( const order_info&& obj ) {
+        type=obj.type;
+        user=obj.user;
+        startTime=obj.startTime;
+        pos=obj.pos;
+        needSeat=obj.needSeat;
+        from=obj.from;
+        to=obj.to;
+        deltaTime=obj.deltaTime;
+    }
+
+    order_info& operator= ( const order_info& obj ) {
+        if ( &obj==this ) return *this;
+        type=obj.type;
+        user=obj.user;
+        startTime=obj.startTime;
+        pos=obj.pos;
+        needSeat=obj.needSeat;
+        from=obj.from;
+        to=obj.to;
+        deltaTime=obj.deltaTime;
+        return *this;
+    }
+    order_info& operator= ( const order_info&& obj ) {
+        if ( &obj==this ) return *this;
+        type=obj.type;
+        user=obj.user;
+        startTime=obj.startTime;
+        pos=obj.pos;
+        needSeat=obj.needSeat;
+        from=obj.from;
+        to=obj.to;
+        deltaTime=obj.deltaTime;
+        return *this;
+    }
 };
 const std::string STATUS[]={"[success]", "[pending]", "[refunded]"};
 bool default_int_cmp ( const int& x, const int& y ) { return x>y; }
@@ -28,15 +75,11 @@ class console : public system {
     console () {
         user_order.open("order/list");
         order_list.open("data/order/", "list.dat");
-        waiting.open("data/temp/", "waiting_list.dat");
-        for ( int i=0 ; i<waiting.size() ; i++ )
-            waiting_list.push_back(waiting.read(i+1));
-        waiting.clear();
+        waiting_list.open("data/order/", "waiting.dat");
     }
     ~console () {
-        for ( int i=0 ; i<waiting_list.size() ; i++ )
-            waiting.push_back(waiting_list[i]);
-        waiting.close();
+        order_list.close();
+        waiting_list.close();
     }
 
     bool solve () {
@@ -114,8 +157,7 @@ class console : public system {
     train_system train_sys;
 
     database<order_info> order_list;
-    database<int> waiting;
-    vector<int> waiting_list;
+    list<int> waiting_list;
     bplus_tree<user_name, int> user_order;
 
     void buy_ticket ( char* key[], char* arg[], int len ) {
@@ -131,12 +173,12 @@ class console : public system {
             return ;
         }
 
-        station_name fromStation=get(key, arg, len, "-f"),
-                     toStation=get(key, arg, len, "-t");
+        station_name fromStation(get(key, arg, len, "-f")),
+                     toStation(get(key, arg, len, "-t"));
         Date startDate=get(key, arg, len, "-d");
 
         int t_pos=train_sys.all_train.at(id).first;
-        train_info t_info=train_sys.train_list.read(t_pos);
+        train_info t_info(train_sys.train_list.read(t_pos));
         int needSeat=atoi(get(key, arg, len, "-n"));
         if ( needSeat>t_info.seatNum ) {
             std::cout << FAIL <<'\n';
@@ -161,9 +203,10 @@ class console : public system {
             return ;
         }
         Time startTime(firstDate, t_info.startTime);
+        int dT=firstDate-range.first;
 
-        int s_pos=train_sys.date_seat.at(pair<int, Date>(t_pos, firstDate)).first;
-        seat_info s_info=train_sys.seat_list.read(s_pos);
+        int s_pos=train_sys.date_seat.at(t_pos).first+dT;
+        seat_info s_info(train_sys.seat_list.read(s_pos));
 
         int maxSeat=1000000;
         for ( right=left ; right<t_info.stationNum ; right++ ) {
@@ -179,7 +222,7 @@ class console : public system {
             for ( int i=left ; i<right ; i++ ) 
                 s_info.seats[i]-=needSeat;
             train_sys.seat_list.write(s_pos, s_info);
-            int o_pos=order_list.push_back(order_info(0, user, startTime, t_pos, needSeat, left, right));
+            int o_pos=order_list.push_back(order_info(0, user, startTime, t_pos, needSeat, left, right, dT));
             user_order.insert(user, o_pos);
             std::cout << (long long)needSeat*(long long)(t_info.prices[right]-t_info.prices[left]) <<'\n';
             return ;
@@ -191,8 +234,9 @@ class console : public system {
             return ;
         }
 
-        int o_pos=order_list.push_back(order_info(1, user, startTime, t_pos, needSeat, left, right));
+        int o_pos=order_list.push_back(order_info(1, user, startTime, t_pos, needSeat, left, right, dT));
         user_order.insert(user, o_pos);
+
         waiting_list.push_back(o_pos);
 
         std::cout <<"queue\n";
@@ -204,7 +248,7 @@ class console : public system {
             return ;
         }
 
-        vector<int> all_order=user_order.find_range(user);
+        vector<int> all_order(user_order.find_range(user));
         if ( all_order.empty() ) {
             std::cout << 0 <<'\n';
             return ;
@@ -212,9 +256,9 @@ class console : public system {
         else std::cout << all_order.size() <<'\n';
 
         all_order.sort(default_int_cmp);
-        for ( auto it=all_order.begin() ; it!=all_order.end() ; it++ ) {
-            order_info o_info=order_list.read(*it);
-            train_info t_info=train_sys.get_train(o_info.pos);
+        for ( int i=0 ; i<all_order.size() ; i++ ) {
+            order_info o_info(order_list.read(all_order[i]));
+            train_info t_info(train_sys.get_train(o_info.pos));
             std::cout << STATUS[o_info.type] <<' ';
             std::cout << t_info.id.str() <<' ';
             std::cout << t_info.stations[o_info.from].str() <<' ';
@@ -238,7 +282,7 @@ class console : public system {
         if ( n_ptr==nullptr ) order_id=1;
         else order_id=atoi(n_ptr);
 
-        vector<int> all_order=user_order.find_range(user);
+        vector<int> all_order(user_order.find_range(user));
         if ( all_order.size()<order_id ) {
             std::cout << FAIL <<'\n';
             return ;
@@ -251,8 +295,8 @@ class console : public system {
             return ;
         }
         if ( o_info.type==0 ) {
-            int s_pos=train_sys.date_seat.at(pair<int, Date>(o_info.pos, o_info.startTime.get_date())).first;
-            seat_info s_info=train_sys.seat_list.read(s_pos);
+            int s_pos=train_sys.date_seat.at(o_info.pos).first+o_info.deltaTime;
+            seat_info s_info(train_sys.seat_list.read(s_pos));
             for ( int i=o_info.from ; i<o_info.to ; i++ ) 
                 s_info.seats[i]+=o_info.needSeat;
             train_sys.seat_list.write(s_pos, s_info);
@@ -260,27 +304,33 @@ class console : public system {
         o_info.type=2;
         order_list.write(r_pos, o_info);
 
-        for ( int i=0 ; i<waiting_list.size() ; ) {
-            int o_pos=waiting_list[i];
+        for ( int i=waiting_list.head ; i ; ) {
+            int o_pos=waiting_list.dat[i];
             if ( o_pos==r_pos ) {
+                int j=waiting_list.nxt[i];
                 waiting_list.erase(i);
+                i=j;
                 continue;
             }
-            order_info it=order_list.read(o_pos);
-            int s_pos=train_sys.date_seat.at(pair<int, Date>(it.pos, it.startTime.get_date())).first;
-            seat_info s_info=train_sys.seat_list.read(s_pos);
+            order_info it(order_list.read(o_pos));
+            int s_pos=train_sys.date_seat.at(it.pos).first+it.deltaTime;
+            seat_info s_info(train_sys.seat_list.read(s_pos));
             int maxSeat=1000000;
-            for ( int i=it.from ; i<it.to ; i++ ) 
-                maxSeat=std::min(maxSeat, s_info.seats[i]);
+            for ( int k=it.from ; k<it.to ; k++ ) 
+                maxSeat=std::min(maxSeat, s_info.seats[k]);
             if ( it.needSeat<=maxSeat ) {
-                for ( int i=it.from ; i<it.to ; i++ ) 
-                    s_info.seats[i]-=it.needSeat;
+                for ( int k=it.from ; k<it.to ; k++ ) 
+                    s_info.seats[k]-=it.needSeat;
                 train_sys.seat_list.write(s_pos, s_info);
+
+                int j=waiting_list.nxt[i];
                 waiting_list.erase(i);
+                i=j;
+
                 it.type=0;
                 order_list.write(o_pos, it);
             }
-            else i++;
+            else i=waiting_list.nxt[i];
         }
 
         std::cout << SUCCESS <<'\n';
