@@ -205,7 +205,6 @@ class train_system : public system {
         return ;
     }
     void query_ticket ( char* key[], char* arg[], int len ) {
-        return ;
         vector<ticket_info> ret;
 
         station_name fromStation=get(key, arg, len, "-s"),
