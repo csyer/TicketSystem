@@ -158,10 +158,10 @@ class train_system : public system {
 
     void query_train ( char* key[], char* arg[], int len ) {
         trainID id=get(key, arg, len, "-i");
-        if ( !released_train.count(id) ) {
-            std::cout << FAIL <<'\n';
-            return ;
-        }
+
+        int is_released=0;
+        if ( released_train.count(id) ) is_released=1;
+
         auto pr=all_train.at(id);
         if ( !pr.second ) {
             std::cout << FAIL <<'\n';
@@ -177,8 +177,12 @@ class train_system : public system {
             return ;
         }
 
-        int s_pos=date_seat.at(pair<int, Date>(t_pos, startDate)).first;
-        seat_info s_info=seat_list.read(s_pos);
+        int s_pos;
+        seat_info s_info;
+        if ( is_released ) {
+            s_pos=date_seat.at(pair<int, Date>(t_pos, startDate)).first;
+            s_info=seat_list.read(s_pos);
+        }
 
         std::cout << id.str() <<' '<< t_info.type <<'\n';
         Time startTime(startDate, t_info.startTime);
@@ -192,7 +196,10 @@ class train_system : public system {
             else std::cout << (nowTime+t_info.stopoverTimes[i]).show();
             std::cout <<' '<< t_info.prices[i] <<' ';
             if ( i==t_info.stationNum-1 ) std::cout <<"x\n";
-            else std::cout << s_info.seats[i] <<"\n";
+            else {
+                if ( is_released ) std::cout << s_info.seats[i] <<"\n";
+                else std::cout << t_info.seatNum <<'\n';
+            }
         }
         return ;
     }
