@@ -415,8 +415,8 @@ class train_system : public system {
 
         station_info train1, train2;
         int minTime=100000000, minPrice=100000000;
-        for ( int i=0 ; i<toTrain.size() ; i++ ) {
-            train_info t_info(train_list.read(toTrain[i]));
+        for ( int k=0 ; k<toTrain.size() ; k++ ) {
+            train_info t_info(train_list.read(toTrain[k]));
 
             int left, right;
             for ( right=0 ; right<t_info.stationNum ; right++ ) 
@@ -425,7 +425,7 @@ class train_system : public system {
             for ( left=right-1 ; left>=0 ; left-- ) {
                 for ( int i=0 ; i<trans_list.size() ; i++ ) {
                     auto& trans_info=trans_list[i];
-                    if ( trans_info.pos==toTrain[i] ) continue;
+                    if ( trans_info.pos==toTrain[k] ) continue;
                     if ( trans_info.to!=t_info.stations[left] ) continue;
 
                     Clock nowTime=t_info.startTime;
@@ -450,7 +450,7 @@ class train_system : public system {
                     lTime=startTime+t_info.travelingTimes[left]+t_info.stopoverTimes[left];
                     aTime=startTime+t_info.travelingTimes[right];
 
-                    int s_pos=date_seat.at(pair<int, Date>(toTrain[i], firstDate)).first, maxSeat=1000000;
+                    int s_pos=date_seat.at(pair<int, Date>(toTrain[k], firstDate)).first, maxSeat=1000000;
                     seat_info s_info=seat_list.read(s_pos);
                     for ( int k=left ; k<right ; k++ ) 
                         maxSeat=std::min(maxSeat, s_info.seats[k]);
@@ -460,7 +460,7 @@ class train_system : public system {
                         sPrice=t_info.prices[right]-t_info.prices[left];
                     station_name from=trans_info.to, to=toStation;
                     trainID nowId=t_info.id;
-                    station_info second_train(station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime));
+                    station_info second_train(station_info(nowId, toTrain[k], sPrice, maxSeat, from, to, lTime, aTime));
 
                     int solved=0;
                     if ( flg ) {
@@ -508,13 +508,13 @@ class train_system : public system {
                         if ( trans_info.id!=train1.id ) {
                             if ( trans_info.id<train1.id ) {
                                 train1=trans_info, 
-                                train2=station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime);
+                                train2=second_train;
                             }
                         }
                         else {
                             if ( nowId<train2.id ) {
                                 train1=trans_info, 
-                                train2=station_info(nowId, toTrain[i], sPrice, maxSeat, from, to, lTime, aTime);
+                                train2=second_train;
                             }
                         }
                     }
