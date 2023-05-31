@@ -66,6 +66,7 @@ bool compare_with_time ( const ticket_info& a, const ticket_info& b ) {
     if ( a.time==b.time ) return a.id<b.id;
     return a.time<b.time;
 }
+bool default_int_cmp_less ( const int& x, const int& y ) { return x<y; }
 
 struct station_info {
     trainID id;
@@ -208,12 +209,16 @@ class train_system : public system {
 
         station_name fromStation=get(key, arg, len, "-s"),
                      toStation=get(key, arg, len, "-t");
-        vector<int> valid_train=station_list.find_range(fromStation);
+        vector<int> from_train=station_list.find_range(fromStation),
+                    to_train=station_list.find_range(toStation);
         Date startDate(get(key, arg, len, "-d"));
-        for ( auto it=valid_train.begin() ; it!=valid_train.end() ; ++it ) {
-            train_info t_info=train_list.read(*it);
 
-            if ( !released_train.count(t_info.id) ) continue;
+        from_train.sort(default_int_cmp_less);
+        to_train.sort(default_int_cmp_less);
+        int size_from=from_train.size(), size_to=to_train.size();
+        for ( int i=0, j=0 ; i<size_from && j<size_to ; i++ ) {
+            train_info t_info=train_list.read(from_train[i]);
+            while ( j<size_to && from_train[i]>to_train[j] ) j++;
 
             int left, right;
             for ( left=0 ; left<t_info.stationNum ; left++ ) 
@@ -227,7 +232,7 @@ class train_system : public system {
             if ( firstDate<range.first || firstDate>range.second ) continue;
             Time startTime(firstDate, t_info.startTime);
 
-            int s_pos=date_seat.at(pair<int, Date>(*it, firstDate)).first;
+            int s_pos=date_seat.at(pair<int, Date>(from_train[i], firstDate)).first;
             seat_info s_info=seat_list.read(s_pos);
 
             int maxSeat=1000000;
@@ -242,6 +247,8 @@ class train_system : public system {
             int sumTime=t_info.travelingTimes[right]-t_info.travelingTimes[left]-t_info.stopoverTimes[left],
                 sumPrice=t_info.prices[right]-t_info.prices[left];
             ret.push_back(ticket_info(t_info.id, lTime, aTime, sumPrice, sumTime, maxSeat));
+
+            while ( j<size_to && from_train[i]==to_train[j] ) j++;
         }
 
         auto p_ptr=get(key, arg, len, "-p");
