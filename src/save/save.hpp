@@ -159,10 +159,11 @@ class save : public LRU<T> {
         clr_sav.seekp(0, std::ios::beg);
         clr_sav.close();
         LRU<T>::open(name, mode);
+        siz=0;
     }
 };
 
-template < class T, const int offset=0 >
+template < class T >
 class database {
   public:
     database () {}
@@ -175,7 +176,7 @@ class database {
         sav.open(name, default_mode);
 
         sav.seekg(0, std::ios::end);
-        siz=(sav.tellg()-offset)/sizeof(T);
+        siz=sav.tellg()/sizeof(T);
     }
     database ( const std::string& file_name ) { open(file_name); }
     void close () { sav.close(); }
@@ -183,25 +184,25 @@ class database {
 
     T read ( int pos ) {
         T ret;
-        sav.seekg(offset+sizeof(T)*(pos-1));
+        sav.seekg(sizeof(T)*(pos-1));
         sav.read(reinterpret_cast<char*>(&ret), sizeof(T));
         return ret;
     }
     void write ( int pos, const T& data ) {
-        sav.seekp(offset+sizeof(T)*(pos-1));
+        sav.seekp(sizeof(T)*(pos-1));
         sav.write(reinterpret_cast<const char*>(&data), sizeof(T));
     }
 
-    template < class U >
-    void get_header ( U& x ) {
-        sav.seekg(0, std::ios::beg);
-        sav.read(reinterpret_cast<char*>(&x), offset);
-    }
-    template < class U >
-    void put_header ( const U& x ) {
-        sav.seekg(0, std::ios::beg);
-        sav.write(reinterpret_cast<const char*>(&x), offset);
-    }
+    // template < class U >
+    // void get_header ( U& x ) {
+    //     sav.seekg(0, std::ios::beg);
+    //     sav.read(reinterpret_cast<char*>(&x), offset);
+    // }
+    // template < class U >
+    // void put_header ( const U& x ) {
+    //     sav.seekg(0, std::ios::beg);
+    //     sav.write(reinterpret_cast<const char*>(&x), offset);
+    // }
 
     int push_back ( const T& data ) {
         write(++siz, data);
@@ -215,6 +216,7 @@ class database {
         clr_sav.seekp(0, std::ios::beg);
         clr_sav.close();
         sav.open(name, default_mode);
+        siz=0;
     }
   private:
     std::fstream sav;

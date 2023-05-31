@@ -149,6 +149,22 @@ class Clock {
         return ret;
     }
 
+    bool operator== ( const Clock& obj ) const {
+        return hour==obj.hour && minute==obj.minute;
+    }
+    bool operator< ( const Clock& obj ) const {
+        return hour*60+minute<obj.hour*60+obj.minute;
+    }
+    bool operator> ( const Clock& obj ) const {
+        return obj<*this;
+    }
+    bool operator<= ( const Clock& obj ) const {
+        return *this<obj || *this==obj;
+    }
+    bool operator>= ( const Clock& obj ) const {
+        return obj<=*this;
+    }
+
     std::string show () const {
         return to_string(hour, 2)+":"+to_string(minute, 2);
     }
