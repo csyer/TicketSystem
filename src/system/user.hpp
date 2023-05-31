@@ -104,7 +104,7 @@ class user_system : public system {
 
         user_name user=get(key, arg, len, "-u");
         if ( cur_user==user ) {
-            std::cout << user.str()+" "+cur_info.show() <<'\n';
+            std::cout << user.str() <<" "<< cur_info.show() <<'\n';
             return ;
         }
 
@@ -119,7 +119,7 @@ class user_system : public system {
             std::cout << FAIL <<'\n';
             return ;
         }
-        std::cout << user.str()+" "+info.show() <<'\n';
+        std::cout << user.str() <<" "<< info.show() <<'\n';
         return ;
     }
     void modify_profile ( char* key[], char* arg[], const int len ) {
@@ -150,9 +150,9 @@ class user_system : public system {
         if ( ptr_g!=nullptr ) new_info.privilege=atoi(ptr_g);
 
         if ( cur_user==user ) {
-            if ( new_info<=cur_info ) {
+            if ( ptr_g==nullptr ) {
                 user_list.update(user, new_info);
-                std::cout << user.str()+" "+new_info.show() <<'\n';
+                std::cout << user.str() <<" "<< new_info.show() <<'\n';
             }
             else std::cout << FAIL <<'\n';
             return ;
@@ -166,7 +166,7 @@ class user_system : public system {
             return ;
         }
         user_list.update(user, new_info);
-        std::cout << user.str()+" "+new_info.show() <<'\n';
+        std::cout << user.str() <<" "<< new_info.show() <<'\n';
     }
     void clear () {
         user_list.clear();

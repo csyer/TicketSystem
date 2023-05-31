@@ -205,6 +205,7 @@ class train_system : public system {
         return ;
     }
     void query_ticket ( char* key[], char* arg[], int len ) {
+        return ;
         vector<ticket_info> ret;
 
         station_name fromStation=get(key, arg, len, "-s"),
@@ -216,41 +217,40 @@ class train_system : public system {
         from_train.sort(default_int_cmp_less);
         to_train.sort(default_int_cmp_less);
         int size_from=from_train.size(), size_to=to_train.size();
-        for ( int i=0, j=0 ; i<size_from && j<size_to ; i++ ) {
+        for ( int i=0, j=0 ; j<size_to && i<size_from ; i++ ) {
             train_info t_info=train_list.read(from_train[i]);
             while ( j<size_to && from_train[i]>to_train[j] ) j++;
+            if ( j==size_to || from_train[i]!=to_train[j] ) continue;
 
-            if ( j<size_to && from_train[i]==to_train[j] ) {
-                int left, right;
-                for ( left=0 ; left<t_info.stationNum ; left++ ) 
-                    if ( t_info.stations[left]==fromStation ) break;
+            int left, right;
+            for ( left=0 ; left<t_info.stationNum ; left++ ) 
+                if ( t_info.stations[left]==fromStation ) break;
 
-                Clock nowTime=t_info.startTime;
-                int deltaDate=nowTime.add(t_info.travelingTimes[left]+t_info.stopoverTimes[left]);
-                Date firstDate=startDate-deltaDate;
+            Clock nowTime=t_info.startTime;
+            int deltaDate=nowTime.add(t_info.travelingTimes[left]+t_info.stopoverTimes[left]);
+            Date firstDate=startDate-deltaDate;
 
-                auto& range=t_info.saleDate;
-                if ( firstDate<range.first || firstDate>range.second ) continue;
-                Time startTime(firstDate, t_info.startTime);
+            auto& range=t_info.saleDate;
+            if ( firstDate<range.first || firstDate>range.second ) continue;
+            Time startTime(firstDate, t_info.startTime);
 
-                int s_pos=date_seat.at(pair<int, Date>(from_train[i], firstDate)).first;
-                seat_info s_info=seat_list.read(s_pos);
+            int s_pos=date_seat.at(pair<int, Date>(from_train[i], firstDate)).first;
+            seat_info s_info=seat_list.read(s_pos);
 
-                int maxSeat=1000000;
-                for ( right=left ; right<t_info.stationNum ; right++ ) {
-                    if ( t_info.stations[right]==toStation ) break;
-                    maxSeat=std::min(maxSeat, s_info.seats[right]);
-                }
-                if ( right==t_info.stationNum ) continue;
-
-                Time lTime=startTime+t_info.travelingTimes[left]+t_info.stopoverTimes[left],
-                    aTime=startTime+t_info.travelingTimes[right];
-                int sumTime=t_info.travelingTimes[right]-t_info.travelingTimes[left]-t_info.stopoverTimes[left],
-                    sumPrice=t_info.prices[right]-t_info.prices[left];
-                ret.push_back(ticket_info(t_info.id, lTime, aTime, sumPrice, sumTime, maxSeat));
+            int maxSeat=1000000;
+            for ( right=left ; right<t_info.stationNum ; right++ ) {
+                if ( t_info.stations[right]==toStation ) break;
+                maxSeat=std::min(maxSeat, s_info.seats[right]);
             }
+            if ( right==t_info.stationNum ) continue;
 
-            while ( j<size_to && from_train[i]==to_train[j] ) j++;
+            Time lTime=startTime+t_info.travelingTimes[left]+t_info.stopoverTimes[left],
+                aTime=startTime+t_info.travelingTimes[right];
+            int sumTime=t_info.travelingTimes[right]-t_info.travelingTimes[left]-t_info.stopoverTimes[left],
+                sumPrice=t_info.prices[right]-t_info.prices[left];
+            ret.push_back(ticket_info(t_info.id, lTime, aTime, sumPrice, sumTime, maxSeat));
+
+            j++;
         }
 
         auto p_ptr=get(key, arg, len, "-p");
