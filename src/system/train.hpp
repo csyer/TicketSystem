@@ -181,7 +181,7 @@ class train_system : public system {
     friend class console;
   public:
     train_system () {
-        train_list.open("data/train/train_list");
+        train_list.open("data/train/", "train_list.dat");
         seat_list.open("data/train/", "seat_list.dat");
         date_seat.open("train/date_seat");
         all_train.open("train/all_train");
@@ -190,7 +190,7 @@ class train_system : public system {
     }
 
     train_info get_train ( int pos ) {
-        return train_list.at(pos).first;
+        return train_list.read(pos);
     }
 
     int add_train ( char* key[], char* arg[], int len ) {
@@ -225,7 +225,7 @@ class train_system : public system {
         info.saleDate=DateRange(Date(left), Date(right));
         info.type=*get(key, arg, len, "-y");
         
-        int pos=train_list.insert(train_list.size(), info);
+        int pos=train_list.push_back(info);
         all_train.insert(id, pos);
         return SUCCESS;
     }
@@ -238,7 +238,7 @@ class train_system : public system {
         trainID id=get(key, arg, len, "-i");
         auto pr=all_train.at(id);
         if ( !pr.second || released_train.count(id) ) return FAIL;
-        train_info info(train_list.at(pr.first).first);
+        train_info info=train_list.read(pr.first);
         for ( int i=0 ; i<info.stationNum ; i++ ) 
             station_list.insert({info.stations[i], pr.first}, 0);
 
@@ -264,7 +264,7 @@ class train_system : public system {
             return ;
         }
         int t_pos=pr.first;
-        train_info t_info(train_list.at(t_pos).first);
+        train_info t_info=train_list.read(t_pos);
 
         Date startDate(get(key, arg, len, "-d"));
         auto range=t_info.saleDate;
@@ -311,11 +311,10 @@ class train_system : public system {
         to_train.sort(default_int_cmp_less);
         int size_from=from_train.size(), size_to=to_train.size();
         for ( int i=0, j=0 ; j<size_to && i<size_from ; i++ ) {
-            train_info t_info(train_list.at(from_train[i]).first);
-            continue;
             while ( j<size_to && from_train[i]>to_train[j] ) j++;
             if ( j==size_to || from_train[i]!=to_train[j] ) continue;
 
+            train_info t_info=train_list.read(from_train[i]);
             int left=0, right=0;
             for ( left=0 ; left<t_info.stationNum ; left++ ) 
                 if ( t_info.stations[left]==fromStation ) break;
@@ -381,7 +380,7 @@ class train_system : public system {
 
         vector<station_info> trans_list;
         for ( int i=0 ; i<fromTrain.size() ; i++ ) {
-            train_info t_info(train_list.at(fromTrain[i]).first);
+            train_info t_info(train_list.read(fromTrain[i]));
 
             int left, right;
             for ( left=0 ; left<t_info.stationNum ; left++ ) 
@@ -417,7 +416,7 @@ class train_system : public system {
         station_info train1, train2;
         int minTime=100000000, minPrice=100000000;
         for ( auto it=toTrain.begin() ; it!=toTrain.end() ; it++ ) {
-            train_info t_info(train_list.at(*it).first);
+            train_info t_info=train_list.read(*it);
 
             int left, right;
             for ( right=0 ; right<t_info.stationNum ; right++ ) 
@@ -542,7 +541,7 @@ class train_system : public system {
         station_list.clear();
     }
   private:
-    bplus_tree<int, train_info> train_list;
+    database<train_info> train_list;
     database<seat_info> seat_list;
     bplus_tree<pair<int, Date>, int> date_seat;
     bplus_tree<trainID, int> all_train;

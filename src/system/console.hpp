@@ -136,7 +136,7 @@ class console : public system {
         Date startDate=get(key, arg, len, "-d");
 
         int t_pos=train_sys.all_train.at(id).first;
-        train_info t_info(train_sys.train_list.at(t_pos).first);
+        train_info t_info=train_sys.train_list.read(t_pos);
         int needSeat=atoi(get(key, arg, len, "-n"));
         if ( needSeat>t_info.seatNum ) {
             std::cout << FAIL <<'\n';

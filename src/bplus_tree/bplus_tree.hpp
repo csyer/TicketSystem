@@ -412,9 +412,9 @@ class bplus_tree {
     }
 
     bool insert ( const Key& key, const T& data ) {
-        ++siz;
         // if ( find(key).second ) return 0;
 
+        ++siz;
         int data_addr=f_data.push_back(data);
         if ( !root ) {
             node nod;
@@ -433,11 +433,11 @@ class bplus_tree {
     }
     bool erase ( const Key& key ) {
         if ( !root ) return 0;
-        --siz;
 
         auto pr=find(key);
         if ( !pr.second ) return 0;
 
+        --siz;
         node nod(pr.first.first);
         int id=pr.first.second;
         nod.erase(id);
