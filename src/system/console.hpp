@@ -21,12 +21,14 @@ struct order_info {
         pos(_pos), needSeat(_needSeat), from(_from), to(_to) {}
 };
 const std::string STATUS[]={"[success]", "[pending]", "[refunded]"};
-bool default_int_cmp ( const int& x, const int& y ) { return x<y; }
+bool default_int_cmp ( const int& x, const int& y ) { return x>y; }
 
 class console : public system {
   public:
     console () {
-        waiting.open("data/temp/waiting_list.dat");
+        user_order.open("order/list");
+        order_list.open("data/order/", "list.dat");
+        waiting.open("data/temp/", "waiting_list.dat");
         for ( int i=0 ; i<waiting.size() ; i++ )
             waiting_list.push_back(waiting.read(i));
         waiting.clear();
@@ -38,14 +40,14 @@ class console : public system {
     }
 
     bool solve () {
-        char input[4096];
-        std::cin.getline(input, 4095);
+        static char input[32768];
+        std::cin.getline(input, 32767);
 
         int arg_num=0;
         char* id=strtok(input, " ");
         char* cmd=strtok(nullptr, " ");
-        char* key[10];
-        char* arg[10];
+        char* key[15];
+        char* arg[15];
         for ( ; ; ++arg_num ) {
             key[arg_num]=strtok(nullptr, " ");
             if ( key[arg_num]==nullptr ) break;
@@ -133,9 +135,8 @@ class console : public system {
                      toStation=get(key, arg, len, "-t");
         Date startDate=get(key, arg, len, "-d");
 
-        int train_pos=train_sys.all_train.at(id).first;
-        train_info t_info=train_sys.train_list.read(train_pos);
-        seat_info s_info=train_sys.seat_list.read(train_pos);
+        int t_pos=train_sys.all_train.at(id).first;
+        train_info t_info=train_sys.train_list.read(t_pos);
 
         int left, right;
         for ( left=0 ; left<t_info.stationNum ; left++ ) 
@@ -152,6 +153,9 @@ class console : public system {
         }
         Time startTime(firstDate, t_info.startTime);
 
+        int s_pos=train_sys.date_seat.at(pair<int, Date>(t_pos, firstDate)).first;
+        seat_info s_info=train_sys.seat_list.read(s_pos);
+
         int maxSeat=1000000;
         for ( right=left ; right<t_info.stationNum ; right++ ) {
             if ( t_info.stations[right]==toStation ) break;
@@ -163,12 +167,13 @@ class console : public system {
         }
 
         int needSeat=atoi(get(key, arg, len, "-n"));
+
         if ( needSeat<=maxSeat ) {
             for ( int i=left ; i<right ; i++ ) 
                 s_info.seats[i]-=needSeat;
-            train_sys.seat_list.write(train_pos, s_info);
-            int pos=order_list.push_back(order_info(0, user, startTime, pos, needSeat, left, right));
-            user_order.insert(user, pos);
+            train_sys.seat_list.write(s_pos, s_info);
+            int o_pos=order_list.push_back(order_info(0, user, startTime, t_pos, needSeat, left, right));
+            user_order.insert(user, o_pos);
             std::cout << (long long)needSeat*(long long)(t_info.prices[right]-t_info.prices[left]) <<'\n';
             return ;
         }
@@ -179,23 +184,25 @@ class console : public system {
             return ;
         }
         
-        int pos=order_list.push_back(order_info(1, user, startTime, pos, needSeat, left, right));
-        user_order.insert(user, pos);
-        waiting_list.push_back(pos);
+        int o_pos=order_list.push_back(order_info(1, user, startTime, t_pos, needSeat, left, right));
+        user_order.insert(user, o_pos);
+        waiting_list.push_back(o_pos);
         std::cout <<"queue\n";
     }
     void query_order ( char* key[], char* arg[], int len ) {
-        user_name user=(get(key, arg, len, "-u"));
+        user_name user(get(key, arg, len, "-u"));
         if ( !user_sys.is_login(user) ) {
             std::cout << FAIL <<'\n';
             return ;
         }
 
-        auto all_order=user_order.find_range(user);
+        vector<int> all_order=user_order.find_range(user);
         if ( all_order.empty() ) {
-            std::cout << FAIL <<'\n';
+            std::cout << 0 <<'\n';
             return ;
         }
+        else std::cout << all_order.size() <<'\n';
+
         all_order.sort(default_int_cmp);
         for ( auto it=all_order.begin() ; it!=all_order.end() ; it++ ) {
             order_info o_info=order_list.read(*it);
@@ -223,7 +230,7 @@ class console : public system {
         if ( n_ptr==nullptr ) order_id=1;
         else order_id=atoi(n_ptr);
 
-        auto all_order=user_order.find_range(user);
+        vector<int> all_order=user_order.find_range(user);
         if ( all_order.size()<order_id ) {
             std::cout << FAIL <<'\n';
             return ;
@@ -239,22 +246,25 @@ class console : public system {
         order_list.write(refund_pos, refund_info);
 
         for ( int i=0 ; i<waiting_list.size() ; ) {
-            int pos=waiting_list[i];
-            order_info it=order_list.read(pos);
-            seat_info s_info=train_sys.seat_list.read(it.pos);
+            int o_pos=waiting_list[i];
+            order_info it=order_list.read(o_pos);
+            int s_pos=train_sys.date_seat.at(pair<int, Date>(it.pos, it.startTime.get_date())).first;
+            seat_info s_info=train_sys.seat_list.read(s_pos);
             int maxSeat=1000000;
             for ( int i=it.from ; i<it.to ; i++ ) 
                 maxSeat=std::min(maxSeat, s_info.seats[i]);
             if ( it.needSeat<=maxSeat ) {
                 for ( int i=it.from ; i<it.to ; i++ ) 
                     s_info.seats[i]-=it.needSeat;
-                train_sys.seat_list.write(it.pos, s_info);
+                train_sys.seat_list.write(s_pos, s_info);
                 waiting_list.erase(i);
                 it.type=0;
-                order_list.write(pos, it);
+                order_list.write(o_pos, it);
             }
             else i++;
         }
+
+        std::cout << SUCCESS <<'\n';
     }
 };
 

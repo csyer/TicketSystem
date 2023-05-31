@@ -54,7 +54,7 @@ class user {
 class user_system : public system {
     friend class console;
   public:
-    user_system () { user_list.open("user/list"); }
+    user_system () { user_list.open("user"); }
 
     bool empty () { return user_list.empty(); }
 
@@ -146,6 +146,7 @@ class user_system : public system {
 
         if ( new_info>=cur_info ) {
             std::cout << FAIL <<'\n';
+            return ;
         }
         if ( cur_user==user ) {
             user_list.update(user, new_info);

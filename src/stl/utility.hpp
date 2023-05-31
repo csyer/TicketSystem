@@ -6,12 +6,12 @@
 
 namespace cay {
 
-std::string to_string ( int num, int bit=10 ) {
+std::string to_string ( int num, int bit=0 ) {
     std::string ret="";
     int flg=0;
     if ( num<0 ) flg=1, num=-num;
     for ( ; num ; num/=10, --bit ) ret=char(num%10+'0')+ret;
-    while ( bit-- ) ret="0"+ret;
+    for ( ; bit>0 ; --bit ) ret="0"+ret;
     if ( flg ) return "-"+ret;
     return ret;
 }
@@ -49,7 +49,7 @@ class string {
     }
 
     void print () const { 
-        std::cerr << s <<' ';
+        std::cerr << s ;
     }
 
     bool operator== ( const string& obj ) const {
@@ -167,6 +167,13 @@ class Date {
         if ( this==&obj ) return *this;
         month=obj.month;
         day=obj.day;
+        return *this;
+    }
+
+    Date& operator++ () {
+        ++day;
+        if ( day>months[month] )
+            day=1, month=month%12+1;
         return *this;
     }
 

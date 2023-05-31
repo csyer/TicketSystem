@@ -117,9 +117,9 @@ class bplus_tree {
         void printKeys () {
             std::cerr <<"  keys: ";
             for ( int i=0 ; i<siz ; i++ ) {
-                std::cerr <<"(";
-                keys[i].first.print();
-                std::cerr << keys[i].second <<") ";
+                std::cerr <<"("; 
+                std::cerr << keys[i].first <<' '<< keys[i].second.show() ;
+                std::cerr <<") ";
             }
             std::cerr <<'\n';
         }
@@ -337,7 +337,7 @@ class bplus_tree {
         nod.printKeys();
 
         if ( mode==1 ) {
-            if ( nod.is_leaf ) return (void)(puts("RETURN"));
+            if ( nod.is_leaf ) return (void)(std::cerr <<"RETURN\n");
             std::cerr <<"  childs: ";
             for ( int i=0 ; i<=nod.siz ; i++ ) 
                 std::cerr << nod.child[i] <<' ';
@@ -356,11 +356,11 @@ class bplus_tree {
     }
 
   public:
-    void open ( const std::string& name="" ) {
+    void open ( const std::string& name ) {
         path_name="data/"+name+"/";
         std::filesystem::create_directories(path_name);
         f_tree.open(path_name+"tree.dat"),
-        f_data.open(path_name+"data.dat");
+        f_data.open(path_name, "data.dat");
         
         std::ifstream checker(path_name+"temp.dat");
         if ( !checker.is_open() ) {
@@ -410,7 +410,7 @@ class bplus_tree {
     }
 
     bool insert ( const Key& key, const T& data ) {
-        if ( find(key).second ) return 0;
+        // if ( find(key).second ) return 0;
 
         int data_addr=f_data.push_back(data);
         if ( !root ) {
@@ -446,6 +446,7 @@ class bplus_tree {
     vector<T> find_range ( const Key& key ) {
         vector<T> ret;
 
+        // key.print(); std::cerr <<'\n';
         auto pr=upper_bound(key);
         if ( !pr.second ) return ret;
         
@@ -457,6 +458,7 @@ class bplus_tree {
             nod=f_tree.read(nod.left);
             id=nod.siz-1;
         }
+        else --id;
 
         while ( key==nod.keys[id] ) {
             ret.push_back(f_data.read(nod.child[id]));

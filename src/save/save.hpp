@@ -166,12 +166,13 @@ template < class T, const int offset=0 >
 class database {
   public:
     database () {}
-    void open ( const std::string& file_name ) {
-        name=file_name;
-        std::ifstream checker(file_name);
+    void open ( const std::string& file_path, const std::string& file_name ) {
+        name=file_path+file_name;
+        std::filesystem::create_directories(file_path);
+        std::ifstream checker(name);
         if ( !checker.is_open() ) 
-            std::ofstream create(file_name);
-        sav.open(file_name, default_mode);
+            std::ofstream create(name);
+        sav.open(name, default_mode);
 
         sav.seekg(0, std::ios::end);
         siz=(sav.tellg()-offset)/sizeof(T);

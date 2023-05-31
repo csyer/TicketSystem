@@ -206,8 +206,8 @@ class vector {
         int n=siz;
         T* tmp=new T[n];
         for ( int stp=2 ; stp<=(n<<1) ; stp<<=1 ) {
-            for ( int l=1 ; l<=n ; l+=stp ) {
-                int mid=l+(stp>>1)-1, r=std::min(n, l+stp-1);
+            for ( int l=0 ; l<n ; l+=stp ) {
+                int mid=l+(stp>>1)-1, r=std::min(n-1, l+stp-1);
                 for ( int i=0, p=l, q=mid+1 ; i<r-l+1 ; i++ ) {
                     if ( p<=mid && q<=r ) tmp[i]=cmp(arr[p], arr[q])?arr[p++]:arr[q++];
                     else tmp[i]=p<=mid?arr[p++]:arr[q++];
