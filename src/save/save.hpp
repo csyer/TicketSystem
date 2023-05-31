@@ -16,7 +16,7 @@ const std::ios_base::openmode default_mode=std::ios::in|std::ios::out|std::ios::
 template < class T >
 class LRU {
   private:
-    static const int M=std::max(200ul, 4000/sizeof(T)), N=M+5;
+    static const int M=std::max(500ul, 4000/sizeof(T)), N=M+5;
     hash_map<int> mp; // pos -> list pos
     int nxt[N], pre[N], idx[N], head, tail, siz;
     T dat[N];
