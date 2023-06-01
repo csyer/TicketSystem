@@ -68,18 +68,16 @@ struct order_info {
     }
 };
 const std::string STATUS[]={"[success]", "[pending]", "[refunded]"};
-bool default_int_cmp ( const int& x, const int& y ) { return x>y; }
 
 class console : public system {
   public:
     console () {
         user_order.open("order/list");
         order_list.open("data/order/", "list.dat");
-        waiting_list.open("data/order/", "waiting.dat");
+        waiting_list.open("order/waiting_list");
     }
     ~console () {
         order_list.close();
-        waiting_list.close();
     }
 
     bool solve () {
@@ -157,17 +155,18 @@ class console : public system {
     train_system train_sys;
 
     database<order_info> order_list;
-    list<int> waiting_list;
+    using Tuple=pair<pair<int, int>, int>;
+    bplus_tree<Tuple, char> waiting_list;
     bplus_tree<user_name, int> user_order;
 
     void buy_ticket ( char* key[], char* arg[], int len ) {
-        user_name user=get(key, arg, len, "-u");
+        user_name user(get(key, arg, len, "-u"));
         if ( !user_sys.is_login(user) ) {
             std::cout << FAIL <<'\n';
             return ;
         }
 
-        trainID id=get(key, arg, len, "-i");
+        trainID id(get(key, arg, len, "-i"));
         if ( !train_sys.released_train.count(id) ) {
             std::cout << FAIL <<'\n';
             return ;
@@ -175,7 +174,7 @@ class console : public system {
 
         station_name fromStation(get(key, arg, len, "-f")),
                      toStation(get(key, arg, len, "-t"));
-        Date startDate=get(key, arg, len, "-d");
+        Date startDate(get(key, arg, len, "-d"));
 
         int t_pos=train_sys.all_train.at(id).first;
         train_info t_info(train_sys.train_list.read(t_pos));
@@ -237,7 +236,8 @@ class console : public system {
         int o_pos=order_list.push_back(order_info(1, user, startTime, t_pos, needSeat, left, right, dT));
         user_order.insert(user, o_pos);
 
-        waiting_list.push_back(o_pos);
+        // waiting_list.push_back(o_pos);
+        waiting_list.insert(Tuple(pair<int, int>(t_pos, dT), o_pos), 0);
 
         std::cout <<"queue\n";
     }
@@ -255,20 +255,22 @@ class console : public system {
         }
         else std::cout << all_order.size() <<'\n';
 
-        all_order.sort(default_int_cmp);
+        all_order.sort(default_int_cmp_less);
         for ( int i=0 ; i<all_order.size() ; i++ ) {
             order_info o_info(order_list.read(all_order[i]));
-            train_info t_info(train_sys.get_train(o_info.pos));
+            train_info t_info(train_sys.train_list.read(o_info.pos));
+            const int& o_from=o_info.from;
+            const int& o_to=o_info.to;
             std::cout << STATUS[o_info.type] <<' ';
-            std::cout << t_info.id.str() <<' ';
-            std::cout << t_info.stations[o_info.from].str() <<' ';
-            Time lTime=o_info.startTime+t_info.travelingTimes[o_info.from]+t_info.stopoverTimes[o_info.from];
-            std::cout << lTime.show() <<' ';
-            std::cout <<"-> ";
-            std::cout << t_info.stations[o_info.to].str() <<' ';
-            Time aTime=o_info.startTime+t_info.travelingTimes[o_info.to];
-            std::cout << aTime.show() <<' ';
-            std::cout << t_info.prices[o_info.to]-t_info.prices[o_info.from] <<' '<< o_info.needSeat <<'\n';
+            t_info.id.print(); std::cout <<' ';;
+            t_info.stations[o_from].print(); std::cout <<' ';;
+            Time lTime=o_info.startTime+t_info.travelingTimes[o_from]+t_info.stopoverTimes[o_from];
+            lTime.show();
+            std::cout <<" -> ";
+            t_info.stations[o_to].print(); std::cout <<' ';;
+            Time aTime=o_info.startTime+t_info.travelingTimes[o_to];
+            aTime.show();
+            std::cout <<' '<< t_info.prices[o_to]-t_info.prices[o_from] <<' '<< o_info.needSeat <<'\n';
         }
     }
     void refund_ticket ( char* key[], char* arg[], int len ) {
@@ -287,7 +289,7 @@ class console : public system {
             std::cout << FAIL <<'\n';
             return ;
         }
-        all_order.sort(default_int_cmp);
+        all_order.sort(default_int_cmp_less);
         int r_pos=all_order[order_id-1];
         order_info o_info=order_list.read(r_pos);
         if ( o_info.type==2 ) {
@@ -304,12 +306,13 @@ class console : public system {
         o_info.type=2;
         order_list.write(r_pos, o_info);
 
-        for ( int i=waiting_list.head ; i ; ) {
-            int o_pos=waiting_list.dat[i];
+        pair<int, int> pr(o_info.pos, o_info.deltaTime);
+        vector<int> waiting(waiting_list.find_range(Tuple(pr, -1), Tuple(pr, 1000000000)));
+        waiting.sort(default_int_cmp_greater);
+        for ( int i=0 ; i<waiting.size() ; i++ ) {
+            int& o_pos=waiting[i];
             if ( o_pos==r_pos ) {
-                int j=waiting_list.nxt[i];
-                waiting_list.erase(i);
-                i=j;
+                waiting_list.erase(Tuple(pr, o_pos));
                 continue;
             }
             order_info it(order_list.read(o_pos));
@@ -322,15 +325,10 @@ class console : public system {
                 for ( int k=it.from ; k<it.to ; k++ ) 
                     s_info.seats[k]-=it.needSeat;
                 train_sys.seat_list.write(s_pos, s_info);
-
-                int j=waiting_list.nxt[i];
-                waiting_list.erase(i);
-                i=j;
-
+                waiting_list.erase(Tuple(pr, o_pos));
                 it.type=0;
                 order_list.write(o_pos, it);
             }
-            else i=waiting_list.nxt[i];
         }
 
         std::cout << SUCCESS <<'\n';

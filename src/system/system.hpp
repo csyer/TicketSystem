@@ -19,6 +19,9 @@ class system {
     }
 };
 
+bool default_int_cmp_less ( const int& x, const int& y ) { return x>y; }
+bool default_int_cmp_greater ( const int& x, const int& y ) { return x<y; }
+
 }
 
 #endif

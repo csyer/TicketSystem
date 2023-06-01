@@ -49,7 +49,7 @@ class string {
     }
 
     void print () const { 
-        std::cerr << s ;
+        std::cout << s ;
     }
 
     bool operator== ( const string& obj ) const {
@@ -165,8 +165,11 @@ class Clock {
         return obj<=*this;
     }
 
-    std::string show () const {
-        return to_string(hour, 2)+":"+to_string(minute, 2);
+    void show () const {
+        if ( hour<10 ) std::cout <<'0';;
+        std::cout << hour <<':';
+        if ( minute<10 ) std::cout <<'0';;
+        std::cout << minute ;
     }
   private:
     int hour, minute;
@@ -241,8 +244,11 @@ class Date {
         return obj<=*this;
     }
 
-    std::string show () const {
-        return to_string(month, 2)+"-"+to_string(day, 2);
+    void show () const {
+        if ( month<10 ) std::cout <<'0';;
+        std::cout << month <<'-';
+        if ( day<10 ) std::cout <<'0';;
+        std::cout << day ;
     }
   private:
     const int months[13]={0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -278,7 +284,11 @@ class Time {
 
     Clock get_clock () const { return c; }
     Date get_date () const { return d; }
-    std::string show () const { return d.show()+" "+c.show(); }
+    void show () const { 
+        d.show();
+        std::cout <<' ';
+        c.show(); 
+    }
   private:
     Date d;
     Clock c;

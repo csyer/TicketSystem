@@ -161,7 +161,6 @@ bool compare_with_time ( const ticket_info& a, const ticket_info& b ) {
     if ( a.time==b.time ) return a.id<b.id;
     return a.time<b.time;
 }
-bool default_int_cmp_less ( const int& x, const int& y ) { return x<y; }
 
 struct station_info {
     trainID id;
@@ -286,10 +285,10 @@ class train_system : public system {
             std::cout << t_info.stations[i].str() <<' ';
             Time nowTime=startTime+t_info.travelingTimes[i];
             if ( i==0 ) std::cout <<"xx-xx xx:xx";
-            else std::cout << nowTime.show();
+            else nowTime.show();
             std::cout <<" -> ";
             if ( i==t_info.stationNum-1 ) std::cout <<"xx-xx xx:xx";
-            else std::cout << (nowTime+t_info.stopoverTimes[i]).show();
+            else (nowTime+t_info.stopoverTimes[i]).show();
             std::cout <<' '<< t_info.prices[i] <<' ';
             if ( i==t_info.stationNum-1 ) std::cout <<"x\n";
             else {
@@ -307,8 +306,8 @@ class train_system : public system {
         vector<int> from_train(station_list.find_range({fromStation, -1}, {fromStation, 100000000})),
                     to_train(station_list.find_range({toStation, -1}, {toStation, 100000000}));
         Date startDate(get(key, arg, len, "-d"));
-        from_train.sort(default_int_cmp_less);
-        to_train.sort(default_int_cmp_less);
+        from_train.sort(default_int_cmp_greater);
+        to_train.sort(default_int_cmp_greater);
         int size_from=from_train.size(), size_to=to_train.size();
         for ( int i=0, j=0 ; j<size_to && i<size_from ; i++ ) {
             while ( j<size_to && from_train[i]>to_train[j] ) j++;
@@ -355,11 +354,11 @@ class train_system : public system {
             ticket_info& ticket=ret[i];
             std::cout << ticket.id.str() <<' ';
             std::cout << fromStation.str() <<' ';
-            std::cout << ticket.leavingTime.show() <<' ';
-            std::cout <<"-> ";
+            ticket.leavingTime.show();
+            std::cout <<" -> ";
             std::cout << toStation.str() <<' ';
-            std::cout << ticket.arrivingTime.show() <<' ';
-            std::cout << ticket.price <<' '<< ticket.seat <<'\n';
+            ticket.arrivingTime.show();
+            std::cout <<' '<< ticket.price <<' '<< ticket.seat <<'\n';
         }
         return ;
     }
@@ -367,11 +366,11 @@ class train_system : public system {
         auto show=[]( const station_info& train ) -> void {
             std::cout << train.id.str() <<' ';
             std::cout << train.from.str() <<' ';
-            std::cout << train.leavingTime.show() <<' ';
-            std::cout <<"-> ";
+            train.leavingTime.show();
+            std::cout <<" -> ";
             std::cout << train.to.str() <<' ';
-            std::cout << train.arrivingTime.show() <<' ';
-            std::cout << train.price <<' '<< train.seat <<'\n';
+            train.arrivingTime.show();
+            std::cout <<' '<< train.price <<' '<< train.seat <<'\n';
         };
 
         station_name fromStation(get(key, arg, len, "-s")),

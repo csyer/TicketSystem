@@ -9,7 +9,7 @@ template < class T >
 class list {
     friend class console;
   private:
-    static const int M=2e5+10;
+    static const int M=1e5+10;
     int nxt[M], pre[M], head, tail, cnt;
     int stk[M], top;
     T dat[M];
@@ -29,7 +29,7 @@ class list {
     list () {
         memset(nxt, 0, sizeof(nxt));
         memset(pre, 0, sizeof(pre));
-        memset(stk, 0, sizeof(stk));
+        top=cnt=0;
     }
     void open ( const std::string path, const std::string name ) { 
         sav.open(path, name); 

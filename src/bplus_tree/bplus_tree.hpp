@@ -130,7 +130,6 @@ class bplus_tree {
     std::string path_name;
 
     using iterator=pair<node, int>;
-
     pair<node, Key> split ( int addr, node& nod, const int is_leaf ) {
         int delta=is_leaf^1, new_siz=nod.siz-SIZ-delta;
         node new_nod(nod.parent, addr, nod.right, new_siz, is_leaf);
