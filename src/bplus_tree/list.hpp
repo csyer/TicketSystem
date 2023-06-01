@@ -26,15 +26,20 @@ class list {
     }
   public:
     
-    list () {}
+    list () {
+        memset(nxt, 0, sizeof(nxt));
+        memset(pre, 0, sizeof(pre));
+        memset(stk, 0, sizeof(stk));
+    }
     void open ( const std::string path, const std::string name ) { 
         sav.open(path, name); 
-        for ( int i=1 ; i<=sav.size() ; i++ ) {
+        cnt=sav.size();
+        for ( int i=1 ; i<=cnt ; i++ ) {
             dat[i]=sav.read(i);
             nxt[i]=i+1;
             pre[i]=i-1;
         } 
-        if ( sav.size()>=1 ) head=1, tail=sav.size(), nxt[sav.size()]=0;
+        if ( sav.size()>=1 ) head=1, tail=cnt, nxt[cnt]=0;
         else head=tail=0;
         sav.clear();
     }

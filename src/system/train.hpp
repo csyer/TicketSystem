@@ -345,6 +345,7 @@ class train_system : public system {
 
             j++;
         }
+        
         auto p_ptr=get(key, arg, len, "-p");
         if ( p_ptr==nullptr || *p_ptr=='t' ) ret.sort(compare_with_time);
         else ret.sort(compare_with_price);
